@@ -10,3 +10,11 @@ pytest-asyncio
 hypothesis
 ruff
 mypy
+fastapi
+uvicorn
+sqlalchemy
+alembic
+psycopg2-binary
+redis
+rq
+python-dotenv
