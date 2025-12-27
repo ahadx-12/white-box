@@ -1,0 +1,14 @@
+{
+  "opposites": [
+    ["safe", "unsafe"],
+    ["open", "closed"]
+  ],
+  "mutex_sets": [
+    ["open", "closed"],
+    ["true", "false"]
+  ],
+  "aliases": {
+    "hazardous": "unsafe",
+    "secured": "safe"
+  }
+}

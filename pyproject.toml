@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trustai-core"
+version = "0.1.0"
+description = "TrustAI VRP deterministic core"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "torch",
+  "pydantic",
+  "orjson",
+  "pytest",
+  "hypothesis",
+  "ruff",
+  "mypy",
+]
+
+[tool.setuptools]
+package-dir = {"" = "packages/core/src"}
+
+[tool.setuptools.packages.find]
+where = ["packages/core/src"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["packages/core/tests"]
+pythonpath = ["packages/core/src"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+check_untyped_defs = true
+disallow_untyped_defs = false
+no_implicit_optional = true
+strict_optional = true
+mypy_path = "packages/core/src"
+files = ["packages/core/src/trustai_core"]
