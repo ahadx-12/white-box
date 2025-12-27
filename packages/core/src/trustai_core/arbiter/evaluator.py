@@ -15,6 +15,33 @@ CLAIM_SUPPORT_THRESHOLD = 0.2
 SCORE_THRESHOLD = 0.92
 
 
+class Evaluator:
+    def __init__(
+        self,
+        encoder: AtomEncoder,
+        score_threshold: float = SCORE_THRESHOLD,
+        claim_support_threshold: float = CLAIM_SUPPORT_THRESHOLD,
+    ) -> None:
+        self.encoder = encoder
+        self.score_threshold = score_threshold
+        self.claim_support_threshold = claim_support_threshold
+
+    def evaluate(
+        self,
+        evidence_atoms: list[AtomModel],
+        claim_atoms: list[AtomModel],
+        pack: PackModel,
+    ) -> MismatchReport:
+        return evaluate(
+            evidence_atoms=evidence_atoms,
+            claim_atoms=claim_atoms,
+            pack=pack,
+            encoder=self.encoder,
+            score_threshold=self.score_threshold,
+            claim_support_threshold=self.claim_support_threshold,
+        )
+
+
 def _manifest_vector(encoder: AtomEncoder, atoms: list[AtomModel]) -> torch.Tensor:
     if not atoms:
         return encoder.memory.get("__EMPTY__")
@@ -73,7 +100,7 @@ def evaluate(
     claim_set = {atom.sort_key() for atom in claim_atoms}
     missing_evidence = [atom for atom in evidence_atoms if atom.sort_key() not in claim_set]
 
-    conflicts = _find_conflicts(claim_atoms, pack)
+    conflicts = _find_conflicts(evidence_atoms + claim_atoms, pack)
 
     return MismatchReport(
         score=score,

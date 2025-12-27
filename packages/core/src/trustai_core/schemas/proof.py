@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+from typing import Any
+
+import orjson
 from pydantic import BaseModel, ConfigDict
 
 from trustai_core.schemas.atoms import AtomModel
+from trustai_core.utils.hashing import sha256_canonical_json
+
+ANSWER_PREVIEW_CHARS = 160
 
 
 class MismatchReport(BaseModel):
@@ -13,6 +19,37 @@ class MismatchReport(BaseModel):
     unsupported_claims: list[AtomModel]
     missing_evidence: list[AtomModel]
     ontology_conflicts: list[str]
+
+
+class IterationTrace(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    i: int
+    answer_preview: str
+    score: float
+    mismatch: MismatchReport
+    feedback_summary: str
+    claim_manifest_hash: str
+
+
+class VerificationResult(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    status: str
+    proof_id: str
+    pack: str
+    pack_fingerprint: str
+    evidence_manifest_hash: str
+    final_answer: str | None
+    iterations: list[IterationTrace]
+    explain: dict[str, Any]
+
+    @staticmethod
+    def compute_proof_id(payload: dict[str, Any]) -> str:
+        return sha256_canonical_json(payload)
+
+    def canonical_json(self) -> bytes:
+        return orjson.dumps(self.model_dump(), option=orjson.OPT_SORT_KEYS)
 
 
 class ProofObject(BaseModel):
