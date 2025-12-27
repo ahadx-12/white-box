@@ -1,0 +1,12 @@
+torch
+pydantic
+orjson
+openai
+anthropic
+httpx
+tenacity
+pytest
+pytest-asyncio
+hypothesis
+ruff
+mypy
