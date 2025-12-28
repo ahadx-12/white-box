@@ -1,0 +1,25 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "nixpacksPlan": {
+      "providers": [
+        "python"
+      ],
+      "phases": {
+        "install": {
+          "dependsOn": [
+            "setup"
+          ],
+          "cmds": [
+            "python -m pip install --upgrade pip",
+            "python -m pip install -r requirements.txt"
+          ]
+        }
+      }
+    }
+  },
+  "deploy": {
+    "startCommand": "PYTHONPATH=apps/api/src:apps/worker/src:packages/core/src python -m trustai_worker.worker",
+    "restartPolicyType": "ALWAYS"
+  }
+}

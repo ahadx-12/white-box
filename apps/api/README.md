@@ -14,4 +14,4 @@ Environment variables:
 - `TRUSTAI_PACKS_ROOT` (default: storage/packs)
 - `OPENAI_MODEL`
 - `CLAUDE_MODEL`
-- `TRUSTAI_AUTO_CREATE_TABLES` (default: 1)
+- `TRUSTAI_DB_AUTOCREATE` (default: 1)

@@ -74,6 +74,11 @@ async def verify(
     )
 
     if resolved_mode == "async":
+        if queue is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Redis unavailable for async verification",
+            )
         job_id = str(uuid4())
         async_payload = {
             "input": body.input,
