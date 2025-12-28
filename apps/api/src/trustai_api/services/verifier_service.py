@@ -7,10 +7,12 @@ from trustai_core.agents.perceiver import Perceiver
 from trustai_core.agents.reasoner import Reasoner
 from trustai_core.arbiter.evaluator import SCORE_THRESHOLD
 from trustai_core.llm.anthropic_client import AnthropicClient
+from trustai_core.llm.base import LLMClient
 from trustai_core.llm.openai_client import OpenAIClient
 from trustai_core.orchestrator.loop import VerificationFailure, verify_and_fix
 from trustai_core.schemas.proof import VerificationResult
 
+from trustai_api.services.mock_llm import MockLLMClient
 from trustai_api.settings import Settings
 
 VerifierFn = Callable[..., Awaitable[VerificationResult]]
@@ -37,10 +39,14 @@ class VerifierService:
         self._perceiver: Perceiver | None = None
         self._reasoner: Reasoner | None = None
 
-    def _default_perceiver(self) -> OpenAIClient:
+    def _default_perceiver(self) -> LLMClient:
+        if self._settings.llm_mode == "mock":
+            return MockLLMClient()
         return OpenAIClient(model=self._settings.openai_model)
 
-    def _default_reasoner(self) -> AnthropicClient:
+    def _default_reasoner(self) -> LLMClient:
+        if self._settings.llm_mode == "mock":
+            return MockLLMClient()
         return AnthropicClient(model=self._settings.claude_model)
 
     def _get_perceiver(self) -> Perceiver:

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "nixpacksPlan": {
+      "providers": [
+        "python"
+      ],
+      "phases": {
+        "install": {
+          "dependsOn": [
+            "setup"
+          ],
+          "cmds": [
+            "python -m pip install --upgrade pip",
+            "python -m pip install -r requirements.txt"
+          ]
+        }
+      }
+    }
+  },
+  "deploy": {
+    "startCommand": "PYTHONPATH=apps/api/src:packages/core/src uvicorn trustai_api.main:create_app --factory --app-dir apps/api/src --host 0.0.0.0 --port $PORT",
+    "healthcheckPath": "/v1/health",
+    "restartPolicyType": "ALWAYS"
+  }
+}

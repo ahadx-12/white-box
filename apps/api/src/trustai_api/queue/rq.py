@@ -3,11 +3,16 @@ from __future__ import annotations
 from typing import Any
 
 from redis import Redis
+from redis.exceptions import RedisError
 from rq import Queue
 
 
-def create_queue(redis_url: str) -> Queue:
-    connection = Redis.from_url(redis_url)
+def create_queue(redis_url: str) -> Queue | None:
+    try:
+        connection = Redis.from_url(redis_url)
+        connection.ping()
+    except RedisError:
+        return None
     return Queue("trustai", connection=connection)
 
 

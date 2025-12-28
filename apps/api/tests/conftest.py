@@ -21,7 +21,7 @@ class DummyQueue:
 def _settings_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
     monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/0")
-    monkeypatch.setenv("TRUSTAI_AUTO_CREATE_TABLES", "1")
+    monkeypatch.setenv("TRUSTAI_DB_AUTOCREATE", "1")
     monkeypatch.setenv("TRUSTAI_PACKS_ROOT", os.path.abspath("storage/packs"))
     get_settings.cache_clear()
     yield

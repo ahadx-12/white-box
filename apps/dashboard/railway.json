@@ -1,0 +1,32 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "nixpacksPlan": {
+      "providers": [
+        "node"
+      ],
+      "phases": {
+        "install": {
+          "dependsOn": [
+            "setup"
+          ],
+          "cmds": [
+            "npm ci"
+          ]
+        },
+        "build": {
+          "dependsOn": [
+            "install"
+          ],
+          "cmds": [
+            "npm run build"
+          ]
+        }
+      }
+    }
+  },
+  "deploy": {
+    "startCommand": "npm run start -- -p $PORT",
+    "restartPolicyType": "ALWAYS"
+  }
+}
