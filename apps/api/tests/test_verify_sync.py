@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from trustai_api.routes.utils import normalize_verification_result
 from trustai_core.schemas.proof import IterationTrace, MismatchReport, VerificationResult
 
 
@@ -66,6 +67,10 @@ def test_verify_sync(client, app):
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["proof_id"] == result.proof_id
+    normalized = normalize_verification_result(result)
+    assert payload["proof_id"] == normalized["proof_id"]
     assert payload["status"] == "verified"
     assert payload["final_answer"] == "Answer"
+    assert payload["explain"]["summary"]
+    assert payload["iterations"][0]["accepted"] is True
+    assert payload["proof"]["status"] == "verified"

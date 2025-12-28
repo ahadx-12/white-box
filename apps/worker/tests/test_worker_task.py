@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 import pytest
+from trustai_api.routes.utils import normalize_verification_result
 from trustai_api.services.job_store import JobStore
 from trustai_api.services.proof_store import ProofStore
 from trustai_api.settings import get_settings
@@ -83,5 +84,8 @@ def test_worker_runs_job(monkeypatch: pytest.MonkeyPatch) -> None:
     assert job is not None
     assert job.status == "done"
     assert job.proof_id is not None
-    assert proof_store.get(session, job.proof_id) is not None
+    stored_proof = proof_store.get(session, job.proof_id)
+    assert stored_proof is not None
+    normalized = normalize_verification_result(_build_result())
+    assert stored_proof.proof_id == normalized["proof_id"]
     session.close()

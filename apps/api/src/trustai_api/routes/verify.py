@@ -10,7 +10,7 @@ from trustai_core.utils.hashing import sha256_canonical_json
 
 from trustai_api.deps import get_db, get_queue, get_settings_dep, get_verifier_service
 from trustai_api.queue.rq import enqueue_verify
-from trustai_api.routes.utils import resolve_pack
+from trustai_api.routes.utils import normalize_verification_result, resolve_pack
 from trustai_api.schemas import VerificationResultResponse, VerifyAsyncResponse, VerifyRequest
 from trustai_api.services.idempotency import IdempotencyStore
 from trustai_api.services.job_store import JobStore
@@ -106,9 +106,10 @@ async def verify(
             threshold=body.options.threshold,
         )
     result = await verifier.verify_sync(body.input, pack, options)
+    payload = normalize_verification_result(result)
     create_result = proof_store.create(
         db,
-        result=result,
+        payload=payload,
         request_hash=request_hash,
         metadata={"options": body.options.model_dump() if body.options else None},
     )

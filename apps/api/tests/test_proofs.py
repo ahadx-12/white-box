@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from trustai_api.routes.utils import normalize_verification_result
 from trustai_api.services.proof_store import ProofStore
 from trustai_core.schemas.proof import IterationTrace, MismatchReport, VerificationResult
 
@@ -48,7 +49,8 @@ def test_get_proof(client, app):
     try:
         result = _build_result()
         proof_store = ProofStore()
-        proof_store.create(session, result=result)
+        normalized = normalize_verification_result(result)
+        proof_store.create(session, payload=normalized)
     finally:
         session.close()
 
@@ -58,3 +60,4 @@ def test_get_proof(client, app):
     payload = response.json()
     assert payload["proof_id"] == result.proof_id
     assert payload["payload"]["status"] == "verified"
+    assert payload["payload"]["proof"]["status"] == "verified"
