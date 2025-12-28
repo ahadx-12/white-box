@@ -11,14 +11,22 @@ from trustai_core.utils.hashing import sha256_canonical_json
 ANSWER_PREVIEW_CHARS = 160
 
 
+class ContradictionPair(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    left: AtomModel
+    right: AtomModel
+
+
 class MismatchReport(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     score: float
     threshold: float
     unsupported_claims: list[AtomModel]
-    missing_evidence: list[AtomModel]
+    missing_required: list[AtomModel]
     ontology_conflicts: list[str]
+    contradictions: list[ContradictionPair] = []
 
 
 class IterationTrace(BaseModel):
@@ -30,6 +38,11 @@ class IterationTrace(BaseModel):
     mismatch: MismatchReport
     feedback_summary: str
     claim_manifest_hash: str
+    top_conflicts: list[str]
+    unsupported_claims: list[AtomModel]
+    missing_required: list[AtomModel]
+    feedback_text: str
+    answer_delta_summary: str
 
 
 class VerificationResult(BaseModel):

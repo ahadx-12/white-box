@@ -54,7 +54,11 @@ def _check_verify_sync(client: httpx.Client, base_url: str, pack: str) -> SmokeR
 
 
 def _check_verify_async(
-    client: httpx.Client, base_url: str, pack: str, timeout_s: int = 30
+    client: httpx.Client,
+    base_url: str,
+    pack: str,
+    timeout_s: int = 30,
+    require_async: bool = False,
 ) -> SmokeResult:
     response = _request(
         client,
@@ -65,6 +69,8 @@ def _check_verify_async(
         json={"input": "The sky is blue."},
     )
     if response.status_code == 503 and "Redis unavailable" in response.text:
+        if require_async:
+            return SmokeResult("verify_async", False, "redis unavailable")
         return SmokeResult("verify_async", True, "SKIPPED (redis unavailable)")
     if response.status_code != 200:
         return SmokeResult("verify_async", False, f"status={response.status_code}")
@@ -88,14 +94,19 @@ def _check_verify_async(
     return SmokeResult("verify_async", False, "timeout waiting for async job")
 
 
-def run_smoke(base_url: str, pack: str) -> int:
+def run_smoke(base_url: str, pack: str, require_async: bool) -> int:
     results: list[SmokeResult] = []
     with httpx.Client(timeout=30.0) as client:
         checks = [
             ("health", lambda: _check_health(client, base_url)),
             ("packs", lambda: _check_packs(client, base_url)),
             ("verify_sync", lambda: _check_verify_sync(client, base_url, pack)),
-            ("verify_async", lambda: _check_verify_async(client, base_url, pack)),
+            (
+                "verify_async",
+                lambda: _check_verify_async(
+                    client, base_url, pack, require_async=require_async
+                ),
+            ),
         ]
         for name, check in checks:
             try:
@@ -119,8 +130,9 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--pack", default="general")
+    parser.add_argument("--require-async", action="store_true")
     args = parser.parse_args()
-    sys.exit(run_smoke(args.base_url.rstrip("/"), args.pack))
+    sys.exit(run_smoke(args.base_url.rstrip("/"), args.pack, args.require_async))
 
 
 if __name__ == "__main__":

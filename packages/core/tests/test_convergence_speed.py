@@ -10,62 +10,47 @@ from trustai_core.schemas.atoms import AtomModel, ManifestModel
 from trustai_core.utils.canonicalize import sort_atoms
 
 
-class MockPerceiver:
+class FastPerceiver:
     async def extract_evidence_atoms(self, text: str, pack) -> ManifestModel:
         atoms = [
-            AtomModel(
-                subject="bridge",
-                predicate="status",
-                obj="safe",
-                is_true=True,
-                confidence=1.0,
-            )
+            AtomModel(subject="door", predicate="state", obj="open", is_true=True, confidence=1.0)
         ]
         return ManifestModel(atoms=sort_atoms(atoms))
 
     async def extract_claim_atoms(self, answer: str, pack) -> ManifestModel:
-        obj = "unsafe" if "unsafe" in answer.lower() else "safe"
+        obj = "closed" if "closed" in answer.lower() else "open"
         atoms = [
-            AtomModel(
-                subject="bridge",
-                predicate="status",
-                obj=obj,
-                is_true=True,
-                confidence=1.0,
-            )
+            AtomModel(subject="door", predicate="state", obj=obj, is_true=True, confidence=1.0)
         ]
         return ManifestModel(atoms=sort_atoms(atoms))
 
 
-class MockReasoner:
+class FastReasoner:
     def __init__(self) -> None:
         self.calls = 0
 
     async def generate_answer(self, user_text: str, pack, evidence=None, feedback=None) -> str:
         self.calls += 1
         if feedback and "MUST REMOVE" in feedback:
-            return "The bridge is safe."
-        if self.calls == 1:
-            return "The bridge is unsafe."
-        return "The bridge is safe."
+            return "FINAL_ANSWER: The door is open.\nThe evidence states the door is open."
+        return "The door is closed."
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_converges_with_mock_llms() -> None:
+async def test_convergence_speed() -> None:
     memory = ItemMemory()
     pack = load_pack("general", memory)
     arbiter = Evaluator(AtomEncoder(memory))
 
     result = await verify_and_fix(
-        user_text="Is the bridge safe?",
+        user_text="Fact: The door is open. Answer whether the door is closed.",
         pack_name=pack.name,
-        perceiver=MockPerceiver(),
-        reasoner=MockReasoner(),
+        perceiver=FastPerceiver(),
+        reasoner=FastReasoner(),
         arbiter=arbiter,
         max_iters=3,
     )
 
     assert result.status == "verified"
-    assert len(result.iterations) <= 3
-    scores = [trace.score for trace in result.iterations]
-    assert scores[-1] >= 0.92
+    assert len(result.iterations) <= 2
+    assert result.iterations[-1].score >= 0.92

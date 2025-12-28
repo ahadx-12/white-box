@@ -11,8 +11,9 @@ def _build_result() -> VerificationResult:
         score=0.95,
         threshold=0.92,
         unsupported_claims=[],
-        missing_evidence=[],
+        missing_required=[],
         ontology_conflicts=[],
+        contradictions=[],
     )
     iteration = IterationTrace(
         i=1,
@@ -21,6 +22,11 @@ def _build_result() -> VerificationResult:
         mismatch=mismatch,
         feedback_summary="",
         claim_manifest_hash="hash",
+        top_conflicts=[],
+        unsupported_claims=[],
+        missing_required=[],
+        feedback_text="",
+        answer_delta_summary="initial_answer",
     )
     payload = {
         "status": "verified",
@@ -48,6 +54,7 @@ class FakeVerifier:
     def __init__(self, result: VerificationResult) -> None:
         self._result = result
         self.calls: list[tuple[str, str, Any]] = []
+        self.debug_calls = {"perceiver": [], "reasoner": []}
 
     async def verify_sync(
         self,
@@ -57,6 +64,9 @@ class FakeVerifier:
     ) -> VerificationResult:
         self.calls.append((input_text, pack, options))
         return self._result
+
+    def debug_info(self) -> dict[str, object]:
+        return self.debug_calls
 
 
 def test_verify_sync(client, app):
@@ -74,3 +84,16 @@ def test_verify_sync(client, app):
     assert payload["explain"]["summary"]
     assert payload["iterations"][0]["accepted"] is True
     assert payload["proof"]["status"] == "verified"
+
+
+def test_verify_sync_debug_header_adds_debug(client, app):
+    result = _build_result()
+    fake_verifier = FakeVerifier(result)
+    fake_verifier.debug_calls = {"perceiver": [{"role": "perceiver"}], "reasoner": []}
+    app.state.verifier_service = fake_verifier
+
+    response = client.post("/v1/verify", json={"input": "Hello"}, headers={"X-TrustAI-Debug": "1"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["debug"]["perceiver"]

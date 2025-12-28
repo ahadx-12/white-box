@@ -14,8 +14,18 @@ ATOM_MANIFEST_SCHEMA: dict = {
                     "predicate": {"type": "string"},
                     "obj": {"type": "string"},
                     "is_true": {"type": "boolean"},
+                    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+                    "type": {"type": "string", "enum": ["fact", "norm", "assumption"]},
+                    "source_span": {
+                        "type": "object",
+                        "properties": {
+                            "start": {"type": "integer", "minimum": 0},
+                            "end": {"type": "integer", "minimum": 0},
+                        },
+                        "required": ["start", "end"],
+                    },
                 },
-                "required": ["subject", "predicate", "obj", "is_true"],
+                "required": ["subject", "predicate", "obj", "is_true", "confidence"],
             },
         }
     },
@@ -30,7 +40,8 @@ def _schema_block() -> str:
 def build_evidence_prompt(text: str) -> str:
     instruction = (
         "You are an extraction agent. Extract evidence atoms from the user text. "
-        "Return JSON only that matches the schema. Normalize tokens to lowercase and underscores."
+        "Return JSON only that matches the schema. Normalize tokens to lowercase and underscores. "
+        "Include confidence between 0 and 1 and optional source_span indices."
     )
     return (
         f"{instruction}\n\n"
@@ -42,7 +53,8 @@ def build_evidence_prompt(text: str) -> str:
 def build_claim_prompt(answer: str) -> str:
     instruction = (
         "You are an extraction agent. Extract claim atoms from the answer text. "
-        "Return JSON only that matches the schema. Normalize tokens to lowercase and underscores."
+        "Return JSON only that matches the schema. Normalize tokens to lowercase and underscores. "
+        "Include confidence between 0 and 1 and optional source_span indices."
     )
     return (
         f"{instruction}\n\n"

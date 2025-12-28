@@ -25,12 +25,14 @@ class GoodClient:
                     "predicate": "Status",
                     "obj": "secured",
                     "is_true": True,
+                    "confidence": 0.9,
                 },
                 {
                     "subject": "Bridge",
                     "predicate": "Status",
                     "obj": "unsafe",
                     "is_true": True,
+                    "confidence": 0.8,
                 },
             ]
         }

@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-env_enabled = os.getenv("TRUSTAI_LIVE") == "1"
+env_enabled = os.getenv("TRUSTAI_LIVE") == "1" or os.getenv("TRUSTAI_LLM_MODE") == "live"
 keys_present = bool(os.getenv("OPEN_AI_KEY") or os.getenv("OPENAI_API_KEY")) and bool(
     os.getenv("CLAUD_AI_KEY") or os.getenv("ANTHROPIC_API_KEY")
 )

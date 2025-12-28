@@ -22,6 +22,9 @@ def canonicalize_atom(atom: AtomModel, aliases: dict[str, str] | None = None) ->
         predicate=canonicalize_token(atom.predicate, aliases),
         obj=canonicalize_token(atom.obj, aliases),
         is_true=atom.is_true,
+        confidence=atom.confidence,
+        source_span=atom.source_span,
+        type=atom.type,
     )
 
 

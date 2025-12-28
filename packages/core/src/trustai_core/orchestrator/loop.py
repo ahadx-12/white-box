@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import difflib
 from typing import Any
 
 from trustai_core.arbiter import feedback as feedback_builder
@@ -10,7 +11,13 @@ from trustai_core.core.memory import ItemMemory
 from trustai_core.packs.loader import load_pack
 from trustai_core.schemas.atoms import AtomModel, ManifestModel
 from trustai_core.schemas.proof import ANSWER_PREVIEW_CHARS, IterationTrace, VerificationResult
+from trustai_core.utils.canonicalize import sort_atoms
 from trustai_core.utils.hashing import sha256_canonical_json
+
+FEEDBACK_PREVIEW_CHARS = 320
+HARD_CONTRADICTION_CONFIDENCE = 0.8
+NO_PROGRESS_DELTA = 0.01
+NO_PROGRESS_LIMIT = 2
 
 
 class VerificationFailure(RuntimeError):
@@ -28,12 +35,16 @@ def _build_explain(mismatch) -> dict[str, Any]:
         "score": round(mismatch.score, 6),
         "threshold": mismatch.threshold,
         "unsupported_claims": [atom.model_dump() for atom in mismatch.unsupported_claims],
-        "missing_evidence": [atom.model_dump() for atom in mismatch.missing_evidence],
+        "missing_required": [atom.model_dump() for atom in mismatch.missing_required],
         "ontology_conflicts": list(mismatch.ontology_conflicts),
+        "contradictions": [
+            {"left": pair.left.model_dump(), "right": pair.right.model_dump()}
+            for pair in mismatch.contradictions
+        ],
         "summary": (
             f"Score {mismatch.score:.4f} vs {mismatch.threshold:.2f}; "
             f"unsupported={len(mismatch.unsupported_claims)}, "
-            f"missing={len(mismatch.missing_evidence)}, "
+            f"missing={len(mismatch.missing_required)}, "
             f"conflicts={len(mismatch.ontology_conflicts)}"
         ),
     }
@@ -59,6 +70,58 @@ def _evaluate_with_fallback(
             score_threshold=threshold,
             claim_support_threshold=support,
         )
+
+
+def _truncate(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    return text[:limit].rstrip() + "…"
+
+
+def _format_atom(atom: AtomModel) -> str:
+    return f"({atom.subject}, {atom.predicate}, {atom.obj}, {atom.is_true})"
+
+
+def _format_conflict(pair) -> str:
+    return f"{_format_atom(pair.left)} vs {_format_atom(pair.right)}"
+
+
+def _top_conflicts(mismatch) -> list[str]:
+    conflicts: list[str] = []
+    for pair in mismatch.contradictions:
+        conflicts.append(f"contradiction: {_format_conflict(pair)}")
+    for atom in mismatch.unsupported_claims:
+        conflicts.append(f"unsupported: {_format_atom(atom)}")
+    for atom in mismatch.missing_required:
+        conflicts.append(f"missing: {_format_atom(atom)}")
+    return conflicts
+
+
+def _summarize_answer_delta(previous: str | None, current: str) -> str:
+    if previous is None:
+        return "initial_answer"
+    if previous == current:
+        return "no_change"
+    prev_tokens = previous.split()
+    curr_tokens = current.split()
+    matcher = difflib.SequenceMatcher(a=prev_tokens, b=curr_tokens)
+    added = removed = replaced = 0
+    for tag, _, _, _, _ in matcher.get_opcodes():
+        if tag == "insert":
+            added += 1
+        elif tag == "delete":
+            removed += 1
+        elif tag == "replace":
+            replaced += 1
+    return f"delta tokens: +{added} -{removed} ~{replaced}"
+
+
+def _atom_key(atom: AtomModel) -> tuple[str, str, str, bool]:
+    return atom.sort_key()
+
+
+def _is_high_confidence(pair) -> bool:
+    return min(pair.left.confidence, pair.right.confidence) >= HARD_CONTRADICTION_CONFIDENCE
 
 
 async def verify_and_fix(
@@ -102,6 +165,9 @@ async def verify_and_fix(
     iterations: list[IterationTrace] = []
     feedback: str | None = None
     last_mismatch = None
+    previous_answer: str | None = None
+    previous_score: float | None = None
+    no_progress_count = 0
 
     for i in range(1, max_iters + 1):
         if preliminary_answer is not None and i == 1:
@@ -123,8 +189,38 @@ async def verify_and_fix(
             claim_support_threshold,
         )
         last_mismatch = mismatch
-        feedback_text = feedback_builder.build_feedback(mismatch)
+        evidence_keys = {_atom_key(atom) for atom in evidence_manifest.atoms}
+        force_claims: list[AtomModel] = []
+        must_not_claim: list[AtomModel] = []
+        has_hard_contradiction = any(
+            _is_high_confidence(pair) for pair in mismatch.contradictions
+        )
+        for pair in mismatch.contradictions:
+            if _atom_key(pair.left) in evidence_keys:
+                force_claims.append(pair.left)
+            if _atom_key(pair.right) in evidence_keys:
+                force_claims.append(pair.right)
+            if _atom_key(pair.left) not in evidence_keys:
+                must_not_claim.append(pair.left)
+            if _atom_key(pair.right) not in evidence_keys:
+                must_not_claim.append(pair.right)
+        must_not_claim.extend(mismatch.unsupported_claims)
+        force_claims = sort_atoms({atom.sort_key(): atom for atom in force_claims}.values())
+        must_not_claim = sort_atoms({atom.sort_key(): atom for atom in must_not_claim}.values())
+        feedback_text = feedback_builder.build_feedback(
+            mismatch,
+            force_claims=force_claims,
+            must_not_claim=must_not_claim,
+            output_format=(
+                "First line: FINAL_ANSWER: ... ; Then a short explanation"
+                if has_hard_contradiction
+                else None
+            ),
+        )
         feedback_summary = feedback_text.splitlines()[0] if feedback_text else ""
+        answer_delta_summary = _summarize_answer_delta(previous_answer, answer)
+        previous_answer = answer
+        top_conflicts = _top_conflicts(mismatch)
 
         iterations.append(
             IterationTrace(
@@ -134,10 +230,28 @@ async def verify_and_fix(
                 mismatch=mismatch,
                 feedback_summary=feedback_summary,
                 claim_manifest_hash=_manifest_hash(claim_manifest.atoms),
+                top_conflicts=top_conflicts,
+                unsupported_claims=mismatch.unsupported_claims,
+                missing_required=mismatch.missing_required,
+                feedback_text=_truncate(feedback_text, FEEDBACK_PREVIEW_CHARS),
+                answer_delta_summary=answer_delta_summary,
             )
         )
+        if previous_score is not None:
+            if mismatch.score < previous_score + NO_PROGRESS_DELTA:
+                no_progress_count += 1
+            else:
+                no_progress_count = 0
+        previous_score = mismatch.score
 
-        if mismatch.score >= threshold:
+        if no_progress_count >= NO_PROGRESS_LIMIT:
+            break
+
+        if (
+            mismatch.score >= threshold
+            and not mismatch.contradictions
+            and not mismatch.unsupported_claims
+        ):
             explain = _build_explain(mismatch)
             iterations_payload = [item.model_dump() for item in iterations]
             result_payload: dict[str, Any] = {

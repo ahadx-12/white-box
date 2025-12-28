@@ -4,15 +4,18 @@ export type IterationSummary = {
   accepted: boolean;
   rejected_because: string[];
   conflicts: string[];
+  top_conflicts: string[];
   unsupported: string[];
   missing: string[];
+  feedback_text: string;
+  answer_delta_summary: string;
 };
 
 export type ExplainSummary = {
   summary: string;
   key_conflicts: string[];
   unsupported_claims: string[];
-  missing_evidence: string[];
+  missing_required: string[];
 };
 
 export type VerificationResponse = {
@@ -26,6 +29,7 @@ export type VerificationResponse = {
   similarity_history: number[];
   explain: ExplainSummary;
   proof: Record<string, unknown>;
+  debug?: Record<string, unknown>;
 };
 
 export type VerifyAsyncResponse = {
