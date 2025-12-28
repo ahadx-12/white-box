@@ -47,5 +47,31 @@ check_untyped_defs = true
 disallow_untyped_defs = false
 no_implicit_optional = true
 strict_optional = true
-mypy_path = "packages/core/src"
-files = ["packages/core/src/trustai_core"]
+
+# Make mypy able to import your packages without needing PYTHONPATH hacks
+mypy_path = "packages/core/src:apps/api/src:apps/worker/src"
+
+# Actually type-check all three codebases by default
+files = [
+  "packages/core/src/trustai_core",
+  "apps/api/src",
+  "apps/worker/src",
+]
+
+# Don’t fail on third-party libs that lack stubs / are untyped
+[[tool.mypy.overrides]]
+module = [
+  "fastapi.*",
+  "uvicorn.*",
+  "sqlalchemy.*",
+  "alembic.*",
+  "redis.*",
+  "rq.*",
+  "psycopg2.*",
+  "httpx.*",
+  "openai.*",
+  "anthropic.*",
+  "torch.*",
+  "orjson.*",
+]
+ignore_missing_imports = true
