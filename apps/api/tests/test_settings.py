@@ -27,3 +27,36 @@ def test_auto_create_tables_env(monkeypatch) -> None:
     get_settings.cache_clear()
     settings = get_settings()
     assert settings.auto_create_tables is True
+
+
+def test_llm_mode_defaults_to_mock(monkeypatch) -> None:
+    monkeypatch.delenv("TRUSTAI_LLM_MODE", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPEN_AI_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("CLAUD_AI_KEY", raising=False)
+    get_settings.cache_clear()
+    settings = get_settings()
+    assert settings.llm_mode == "mock"
+
+
+def test_live_mode_requires_keys(monkeypatch) -> None:
+    monkeypatch.setenv("TRUSTAI_LLM_MODE", "live")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPEN_AI_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("CLAUD_AI_KEY", raising=False)
+    get_settings.cache_clear()
+    try:
+        get_settings()
+    except ValueError as exc:
+        assert "TRUSTAI_LLM_MODE=live requires OPENAI_API_KEY or OPEN_AI_KEY" in str(exc)
+    else:
+        raise AssertionError("Expected live mode to require keys")
+
+
+def test_debug_default_env(monkeypatch) -> None:
+    monkeypatch.setenv("TRUSTAI_DEBUG_DEFAULT", "1")
+    get_settings.cache_clear()
+    settings = get_settings()
+    assert settings.debug_default is True

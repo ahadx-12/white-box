@@ -8,7 +8,7 @@ from trustai_core.core.algebra import bundle, cosine_similarity
 from trustai_core.core.encoder import AtomEncoder
 from trustai_core.packs.types import PackModel
 from trustai_core.schemas.atoms import AtomModel
-from trustai_core.schemas.proof import MismatchReport
+from trustai_core.schemas.proof import ContradictionPair, MismatchReport
 from trustai_core.utils.canonicalize import sort_atoms
 
 CLAIM_SUPPORT_THRESHOLD = 0.2
@@ -78,6 +78,32 @@ def _find_conflicts(atoms: list[AtomModel], ontology: PackModel) -> list[str]:
     return sorted(conflicts)
 
 
+def _find_contradiction_pairs(
+    atoms: list[AtomModel], ontology: PackModel
+) -> list[ContradictionPair]:
+    mutex_pairs = _collect_mutex_pairs(ontology)
+    grouped: dict[tuple[str, str], dict[str, AtomModel]] = defaultdict(dict)
+    for atom in atoms:
+        if atom.is_true:
+            grouped[(atom.subject, atom.predicate)][atom.obj] = atom
+
+    pairs: list[ContradictionPair] = []
+    for (subject, predicate), object_map in grouped.items():
+        objects = sorted(object_map.keys())
+        for i, left in enumerate(objects):
+            for right in objects[i + 1 :]:
+                if frozenset({left, right}) in mutex_pairs:
+                    left_atom = object_map[left]
+                    right_atom = object_map[right]
+                    pairs.append(
+                        ContradictionPair(
+                            left=left_atom,
+                            right=right_atom,
+                        )
+                    )
+    return pairs
+
+
 def evaluate(
     evidence_atoms: list[AtomModel],
     claim_atoms: list[AtomModel],
@@ -98,14 +124,16 @@ def evaluate(
             unsupported_claims.append(atom)
 
     claim_set = {atom.sort_key() for atom in claim_atoms}
-    missing_evidence = [atom for atom in evidence_atoms if atom.sort_key() not in claim_set]
+    missing_required = [atom for atom in evidence_atoms if atom.sort_key() not in claim_set]
 
     conflicts = _find_conflicts(evidence_atoms + claim_atoms, pack)
+    contradictions = _find_contradiction_pairs(evidence_atoms + claim_atoms, pack)
 
     return MismatchReport(
         score=score,
         threshold=score_threshold,
         unsupported_claims=sort_atoms(unsupported_claims),
-        missing_evidence=sort_atoms(missing_evidence),
+        missing_required=sort_atoms(missing_required),
         ontology_conflicts=conflicts,
+        contradictions=contradictions,
     )

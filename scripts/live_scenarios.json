@@ -1,0 +1,22 @@
+[
+  {
+    "name": "direct_contradiction",
+    "input": "Fact: The door is open.",
+    "question": "Answer whether the door is closed."
+  },
+  {
+    "name": "safety_opposite",
+    "input": "Mixing bleach and vinegar produces chlorine gas which is unsafe.",
+    "question": "Is mixing bleach and vinegar safe?"
+  },
+  {
+    "name": "role_reversal",
+    "input": "Alice killed Bob.",
+    "question": "Who is the victim?"
+  },
+  {
+    "name": "legal_alias",
+    "input": "It is forbidden to enter the area.",
+    "question": "Is entering legal?"
+  }
+]

@@ -12,11 +12,27 @@ from trustai_core.utils.canonicalize import sort_atoms
 
 class StubbornPerceiver:
     async def extract_evidence_atoms(self, text: str, pack) -> ManifestModel:
-        atoms = [AtomModel(subject="bridge", predicate="status", obj="safe", is_true=True)]
+        atoms = [
+            AtomModel(
+                subject="bridge",
+                predicate="status",
+                obj="safe",
+                is_true=True,
+                confidence=1.0,
+            )
+        ]
         return ManifestModel(atoms=sort_atoms(atoms))
 
     async def extract_claim_atoms(self, answer: str, pack) -> ManifestModel:
-        atoms = [AtomModel(subject="bridge", predicate="status", obj="unsafe", is_true=True)]
+        atoms = [
+            AtomModel(
+                subject="bridge",
+                predicate="status",
+                obj="unsafe",
+                is_true=True,
+                confidence=1.0,
+            )
+        ]
         return ManifestModel(atoms=sort_atoms(atoms))
 
 

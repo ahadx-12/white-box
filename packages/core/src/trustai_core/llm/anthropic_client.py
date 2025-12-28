@@ -36,6 +36,10 @@ class AnthropicClient(LLMClient):
         self._model = model
         self._retry_policy = retry_policy or RetryPolicy()
 
+    @property
+    def model_id(self) -> str:
+        return self._model
+
     async def complete_json(self, prompt: str, schema: dict) -> dict:
         raise LLMError("Anthropic client does not support structured JSON responses")
 

@@ -31,6 +31,7 @@ async def verify(
     mode: str | None = Query(default=None),
     x_request_id: str | None = Header(default=None, alias="X-Request-Id"),
     x_pack: str | None = Header(default=None, alias="X-TrustAI-Pack"),
+    x_trustai_debug: str | None = Header(default=None, alias="X-TrustAI-Debug"),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings_dep),
     queue: Any = Depends(get_queue),
@@ -111,7 +112,11 @@ async def verify(
             threshold=body.options.threshold,
         )
     result = await verifier.verify_sync(body.input, pack, options)
-    payload = normalize_verification_result(result)
+    debug_enabled = x_trustai_debug == "1" or (x_trustai_debug is None and settings.debug_default)
+    debug_info = verifier.debug_info() if debug_enabled else None
+    payload = normalize_verification_result(
+        result, include_debug=debug_enabled, debug_info=debug_info
+    )
     create_result = proof_store.create(
         db,
         payload=payload,

@@ -4,6 +4,8 @@ from trustai_core.llm.base import LLMClient
 
 
 class MockLLMClient(LLMClient):
+    model_id = "mock"
+
     async def complete_json(self, prompt: str, schema: dict) -> dict:
         return {"atoms": []}
 

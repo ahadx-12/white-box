@@ -20,10 +20,11 @@ This repo is a monorepo with three Railway services:
 - **Config Path**: `/apps/api/railway.json`
 - **Attach plugins**: Postgres + Redis
 - **Environment variables**:
+  - `TRUSTAI_LLM_MODE=live`
   - `TRUSTAI_DB_AUTOCREATE=1`
-  - `OPENAI_API_KEY=...`
-  - `ANTHROPIC_API_KEY=...`
-  - (optional) `OPENAI_MODEL`, `CLAUDE_MODEL`, `TRUSTAI_PACKS_ROOT`
+  - `OPENAI_API_KEY=...` (or `OPEN_AI_KEY`)
+  - `ANTHROPIC_API_KEY=...` (or `CLAUD_AI_KEY`)
+  - (optional) `OPENAI_MODEL`, `CLAUDE_MODEL`, `TRUSTAI_PACKS_ROOT`, `TRUSTAI_THRESHOLD`, `TRUSTAI_MAX_ITERS`, `TRUSTAI_DEBUG_DEFAULT`
 - **Networking**: expose a public domain (Railway will generate one)
 
 ### B) trustai-worker
@@ -31,6 +32,10 @@ This repo is a monorepo with three Railway services:
 - **Root Directory**: `/`
 - **Config Path**: `/apps/worker/railway.json`
 - **Attach plugins**: Redis
+- **Environment variables**:
+  - `TRUSTAI_LLM_MODE=live`
+  - `OPENAI_API_KEY=...` (or `OPEN_AI_KEY`)
+  - `ANTHROPIC_API_KEY=...` (or `CLAUD_AI_KEY`)
 - **Networking**: no public domain required
 
 ### C) trustai-dashboard
@@ -58,6 +63,34 @@ curl -sSf https://<trustai-api-domain>/v1/verify \
   -H "X-TrustAI-Pack: general" \
   -d '{"input":"The sky is blue."}'
 ```
+
+## 4) Live convergence runbook (Railway)
+
+Required env vars for API + worker:
+
+- `TRUSTAI_LLM_MODE=live`
+- `OPENAI_API_KEY=...` (or `OPEN_AI_KEY`)
+- `ANTHROPIC_API_KEY=...` (or `CLAUD_AI_KEY`)
+- `DATABASE_URL` (from Railway Postgres plugin)
+- `REDIS_URL` (from Railway Redis plugin)
+
+Optional:
+
+- `TRUSTAI_DB_AUTOCREATE=1`
+- `TRUSTAI_THRESHOLD=0.92`
+- `TRUSTAI_MAX_ITERS=5`
+- `TRUSTAI_DEBUG_DEFAULT=0`
+
+Once deployed, run the live convergence harness against the public API domain:
+
+```bash
+python scripts/live_convergence.py --base-url https://<trustai-api-domain>
+```
+
+Expected behavior:
+
+- Iteration 1 is often rejected with conflicts/unsupported claims.
+- Iteration 2+ converges with improved similarity and corrected answers.
 
 Async verify (requires worker + Redis):
 

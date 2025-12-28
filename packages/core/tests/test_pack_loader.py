@@ -10,9 +10,9 @@ from trustai_core.utils.canonicalize import canonicalize_token
 def test_opposites_anchored():
     memory = ItemMemory(ItemMemoryConfig())
     pack = load_pack("general", memory, storage_root=Path("storage/packs"))
-    safe_v = memory.get("safe")
-    unsafe_v = memory.get("unsafe")
-    assert cosine_similarity(safe_v, unsafe_v) == pytest.approx(-1.0, abs=1e-6)
+    open_v = memory.get("open")
+    closed_v = memory.get("closed")
+    assert cosine_similarity(open_v, closed_v) == pytest.approx(-1.0, abs=1e-6)
     assert pack.ontology.opposites
 
 
