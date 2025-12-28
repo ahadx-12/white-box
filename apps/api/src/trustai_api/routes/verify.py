@@ -75,7 +75,7 @@ async def verify(
 
     if resolved_mode == "async":
         job_id = str(uuid4())
-        payload = {
+        async_payload = {
             "input": body.input,
             "pack": pack,
             "options": body.options.model_dump() if body.options else None,
@@ -86,7 +86,7 @@ async def verify(
             pack=pack,
             input_text=body.input,
             request_id=x_request_id,
-            payload_json=orjson.dumps(payload).decode(),
+            payload_json=orjson.dumps(async_payload).decode(),
         )
         if x_request_id:
             idempotency_store.create(
@@ -96,7 +96,7 @@ async def verify(
                 pack=pack,
                 job_id=job_id,
             )
-        enqueue_verify(queue, job_id=job_id, payload=payload)
+        enqueue_verify(queue, job_id=job_id, payload=async_payload)
         return {"job_id": job_id, "status": "queued"}
 
     options = None
@@ -111,7 +111,7 @@ async def verify(
         db,
         payload=payload,
         request_hash=request_hash,
-        metadata={"options": body.options.model_dump() if body.options else None},
+        metadata_json={"options": body.options.model_dump() if body.options else None},
     )
     payload = create_result.payload
     payload_json = orjson.dumps(payload, option=orjson.OPT_SORT_KEYS).decode()

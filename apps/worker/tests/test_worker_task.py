@@ -61,11 +61,13 @@ def _env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("TRUSTAI_PACKS_ROOT", os.path.abspath("storage/packs"))
     get_settings.cache_clear()
     tasks._sessionmaker.cache_clear()
-    tasks._verifier_service.cache_clear()
+    if hasattr(tasks._verifier_service, "cache_clear"):
+        tasks._verifier_service.cache_clear()
     yield
     get_settings.cache_clear()
     tasks._sessionmaker.cache_clear()
-    tasks._verifier_service.cache_clear()
+    if hasattr(tasks._verifier_service, "cache_clear"):
+        tasks._verifier_service.cache_clear()
 
 
 def test_worker_runs_job(monkeypatch: pytest.MonkeyPatch) -> None:

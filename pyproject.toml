@@ -16,6 +16,14 @@ dependencies = [
   "anthropic",
   "httpx",
   "tenacity",
+  "fastapi",
+  "uvicorn",
+  "sqlalchemy",
+  "alembic",
+  "psycopg2-binary",
+  "redis",
+  "rq",
+  "python-dotenv",
   "pytest",
   "pytest-asyncio",
   "hypothesis",
@@ -61,6 +69,7 @@ files = [
 # Don’t fail on third-party libs that lack stubs / are untyped
 [[tool.mypy.overrides]]
 module = [
+  "tenacity.*",
   "fastapi.*",
   "uvicorn.*",
   "sqlalchemy.*",

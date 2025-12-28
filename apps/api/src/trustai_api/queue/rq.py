@@ -16,6 +16,5 @@ def enqueue_verify(queue: Queue, job_id: str, payload: dict[str, Any]) -> str:
         "trustai_worker.tasks.run_deep_verify",
         job_id,
         payload,
-        job_id=job_id,
     )
     return job_id

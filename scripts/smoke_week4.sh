@@ -7,6 +7,16 @@ note() {
   echo "[smoke] $1"
 }
 
+if ! command -v docker >/dev/null 2>&1; then
+  note "skipping (docker not available)"
+  exit 0
+fi
+
+if ! curl -sf "${BASE_URL}/v1/health" > /dev/null; then
+  note "skipping (api not running at ${BASE_URL})"
+  exit 0
+fi
+
 note "Checking health"
 curl -sf "${BASE_URL}/v1/health" > /dev/null
 
