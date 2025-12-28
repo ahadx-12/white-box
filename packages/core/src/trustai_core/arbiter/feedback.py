@@ -11,17 +11,29 @@ def _format_atoms(atoms: list[AtomModel]) -> str:
     return "\n".join(lines)
 
 
-def build_feedback(mismatch: MismatchReport) -> str:
-    parts = [
-        f"Score: {mismatch.score:.4f} (threshold {mismatch.threshold:.2f})",
-        "Unsupported claims:",
-        _format_atoms(mismatch.unsupported_claims),
-        "Missing evidence:",
-        _format_atoms(mismatch.missing_evidence),
-        "Ontology conflicts:",
+def _format_contradictions(pairs: list) -> str:
+    if not pairs:
+        return "- none"
+    lines = [
+        f"- ({pair.left.subject}, {pair.left.predicate}, {pair.left.obj}, {pair.left.is_true}) vs "
+        f"({pair.right.subject}, {pair.right.predicate}, {pair.right.obj}, {pair.right.is_true})"
+        for pair in pairs
     ]
-    if mismatch.ontology_conflicts:
-        parts.extend([f"- {item}" for item in mismatch.ontology_conflicts])
-    else:
-        parts.append("- none")
+    return "\n".join(lines)
+
+
+def build_feedback(mismatch: MismatchReport, force_claims: list[AtomModel] | None = None) -> str:
+    force_claims = force_claims or []
+    parts = [
+        "MUST REMOVE:",
+        _format_atoms(mismatch.unsupported_claims),
+        "MUST ADD:",
+        _format_atoms(mismatch.missing_required + force_claims),
+        "CONTRADICTIONS:",
+        _format_contradictions(mismatch.contradictions),
+        (
+            "REWRITE RULE: keep answer consistent with Evidence Atoms; "
+            "do not introduce new factual claims."
+        ),
+    ]
     return "\n".join(parts)

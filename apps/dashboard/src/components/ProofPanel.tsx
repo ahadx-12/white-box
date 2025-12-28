@@ -60,8 +60,8 @@ export default function ProofPanel({ proof }: { proof?: VerificationResponse }) 
           items={proof.explain.unsupported_claims}
         />
         <ListSection
-          title="Missing Evidence"
-          items={proof.explain.missing_evidence}
+          title="Missing Required"
+          items={proof.explain.missing_required}
         />
       </section>
 

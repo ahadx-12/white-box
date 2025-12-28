@@ -22,15 +22,18 @@ class IterationTraceResponse(BaseModel):
     accepted: bool
     rejected_because: list[str]
     conflicts: list[str]
+    top_conflicts: list[str]
     unsupported: list[str]
     missing: list[str]
+    feedback_text: str
+    answer_delta_summary: str
 
 
 class ExplainSummaryResponse(BaseModel):
     summary: str
     key_conflicts: list[str]
     unsupported_claims: list[str]
-    missing_evidence: list[str]
+    missing_required: list[str]
 
 
 class VerificationResultResponse(BaseModel):
@@ -44,6 +47,7 @@ class VerificationResultResponse(BaseModel):
     similarity_history: list[float]
     explain: ExplainSummaryResponse
     proof: dict[str, Any]
+    debug: dict[str, Any] | None = None
 
 
 class VerifyAsyncResponse(BaseModel):

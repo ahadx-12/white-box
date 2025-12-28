@@ -10,8 +10,9 @@ def _build_result() -> VerificationResult:
         score=0.95,
         threshold=0.92,
         unsupported_claims=[],
-        missing_evidence=[],
+        missing_required=[],
         ontology_conflicts=[],
+        contradictions=[],
     )
     iteration = IterationTrace(
         i=1,
@@ -20,6 +21,11 @@ def _build_result() -> VerificationResult:
         mismatch=mismatch,
         feedback_summary="",
         claim_manifest_hash="hash",
+        top_conflicts=[],
+        unsupported_claims=[],
+        missing_required=[],
+        feedback_text="",
+        answer_delta_summary="initial_answer",
     )
     payload = {
         "status": "verified",

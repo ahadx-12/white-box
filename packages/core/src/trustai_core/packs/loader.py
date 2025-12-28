@@ -38,10 +38,12 @@ def load_pack(pack_name: str, memory: ItemMemory, storage_root: Path | None = No
         for mutex in ontology_raw.get("mutex_sets", [])
     ]
 
-    axioms = [
-        canonicalize_atom(AtomModel(**atom), aliases)
-        for atom in axioms_raw
-    ]
+    axioms = []
+    for atom in axioms_raw:
+        normalized = dict(atom)
+        normalized.setdefault("is_true", True)
+        normalized.setdefault("confidence", 1.0)
+        axioms.append(canonicalize_atom(AtomModel(**normalized), aliases))
 
     for left, right in opposites:
         anchor = min(left, right)
