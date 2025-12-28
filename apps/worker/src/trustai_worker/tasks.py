@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 from trustai_api.db.models import Base
 from trustai_api.db.session import create_engine_from_url, create_sessionmaker
+from trustai_api.routes.utils import normalize_verification_result
 from trustai_api.services.idempotency import IdempotencyStore
 from trustai_api.services.job_store import JobStore
 from trustai_api.services.proof_store import ProofStore
@@ -67,7 +68,8 @@ def run_deep_verify(job_id: str, payload: dict[str, Any]) -> None:
                 options=options,
             )
         )
-        proof_store.create(session, result=result)
+        normalized = normalize_verification_result(result)
+        proof_store.create(session, payload=normalized)
         job_store.set_done(session, job, proof_id=result.proof_id)
         if job.request_id:
             record = idempotency_store.get(session, job.request_id)

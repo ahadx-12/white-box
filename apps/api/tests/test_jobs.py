@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from trustai_api.db.models import Job
+from trustai_api.routes.utils import normalize_verification_result
 from trustai_api.services.proof_store import ProofStore
 from trustai_core.schemas.proof import IterationTrace, MismatchReport, VerificationResult
 
@@ -49,7 +50,8 @@ def test_get_job_with_result(client, app):
     try:
         result = _build_result()
         proof_store = ProofStore()
-        proof_store.create(session, result=result)
+        normalized = normalize_verification_result(result)
+        proof_store.create(session, payload=normalized)
         job = Job(
             job_id="job-123",
             status="done",
@@ -69,3 +71,4 @@ def test_get_job_with_result(client, app):
     assert payload["status"] == "done"
     assert payload["proof_id"] == result.proof_id
     assert payload["result"]["proof_id"] == result.proof_id
+    assert payload["result"]["proof"]["status"] == "verified"

@@ -18,11 +18,19 @@ class VerifyRequest(BaseModel):
 
 class IterationTraceResponse(BaseModel):
     i: int
-    answer_preview: str
     score: float
-    mismatch: dict[str, Any]
-    feedback_summary: str
-    claim_manifest_hash: str
+    accepted: bool
+    rejected_because: list[str]
+    conflicts: list[str]
+    unsupported: list[str]
+    missing: list[str]
+
+
+class ExplainSummaryResponse(BaseModel):
+    summary: str
+    key_conflicts: list[str]
+    unsupported_claims: list[str]
+    missing_evidence: list[str]
 
 
 class VerificationResultResponse(BaseModel):
@@ -33,7 +41,9 @@ class VerificationResultResponse(BaseModel):
     evidence_manifest_hash: str
     final_answer: str | None
     iterations: list[IterationTraceResponse]
-    explain: dict[str, Any]
+    similarity_history: list[float]
+    explain: ExplainSummaryResponse
+    proof: dict[str, Any]
 
 
 class VerifyAsyncResponse(BaseModel):
