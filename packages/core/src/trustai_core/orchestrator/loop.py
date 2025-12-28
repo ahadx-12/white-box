@@ -11,9 +11,13 @@ from trustai_core.core.memory import ItemMemory
 from trustai_core.packs.loader import load_pack
 from trustai_core.schemas.atoms import AtomModel, ManifestModel
 from trustai_core.schemas.proof import ANSWER_PREVIEW_CHARS, IterationTrace, VerificationResult
+from trustai_core.utils.canonicalize import sort_atoms
 from trustai_core.utils.hashing import sha256_canonical_json
 
 FEEDBACK_PREVIEW_CHARS = 320
+HARD_CONTRADICTION_CONFIDENCE = 0.8
+NO_PROGRESS_DELTA = 0.01
+NO_PROGRESS_LIMIT = 2
 
 
 class VerificationFailure(RuntimeError):
@@ -112,6 +116,14 @@ def _summarize_answer_delta(previous: str | None, current: str) -> str:
     return f"delta tokens: +{added} -{removed} ~{replaced}"
 
 
+def _atom_key(atom: AtomModel) -> tuple[str, str, str, bool]:
+    return atom.sort_key()
+
+
+def _is_high_confidence(pair) -> bool:
+    return min(pair.left.confidence, pair.right.confidence) >= HARD_CONTRADICTION_CONFIDENCE
+
+
 async def verify_and_fix(
     user_text: str,
     pack_name: str,
@@ -154,6 +166,8 @@ async def verify_and_fix(
     feedback: str | None = None
     last_mismatch = None
     previous_answer: str | None = None
+    previous_score: float | None = None
+    no_progress_count = 0
 
     for i in range(1, max_iters + 1):
         if preliminary_answer is not None and i == 1:
@@ -175,7 +189,34 @@ async def verify_and_fix(
             claim_support_threshold,
         )
         last_mismatch = mismatch
-        feedback_text = feedback_builder.build_feedback(mismatch)
+        evidence_keys = {_atom_key(atom) for atom in evidence_manifest.atoms}
+        force_claims: list[AtomModel] = []
+        must_not_claim: list[AtomModel] = []
+        has_hard_contradiction = any(
+            _is_high_confidence(pair) for pair in mismatch.contradictions
+        )
+        for pair in mismatch.contradictions:
+            if _atom_key(pair.left) in evidence_keys:
+                force_claims.append(pair.left)
+            if _atom_key(pair.right) in evidence_keys:
+                force_claims.append(pair.right)
+            if _atom_key(pair.left) not in evidence_keys:
+                must_not_claim.append(pair.left)
+            if _atom_key(pair.right) not in evidence_keys:
+                must_not_claim.append(pair.right)
+        must_not_claim.extend(mismatch.unsupported_claims)
+        force_claims = sort_atoms({atom.sort_key(): atom for atom in force_claims}.values())
+        must_not_claim = sort_atoms({atom.sort_key(): atom for atom in must_not_claim}.values())
+        feedback_text = feedback_builder.build_feedback(
+            mismatch,
+            force_claims=force_claims,
+            must_not_claim=must_not_claim,
+            output_format=(
+                "First line: FINAL_ANSWER: ... ; Then a short explanation"
+                if has_hard_contradiction
+                else None
+            ),
+        )
         feedback_summary = feedback_text.splitlines()[0] if feedback_text else ""
         answer_delta_summary = _summarize_answer_delta(previous_answer, answer)
         previous_answer = answer
@@ -196,8 +237,21 @@ async def verify_and_fix(
                 answer_delta_summary=answer_delta_summary,
             )
         )
+        if previous_score is not None:
+            if mismatch.score < previous_score + NO_PROGRESS_DELTA:
+                no_progress_count += 1
+            else:
+                no_progress_count = 0
+        previous_score = mismatch.score
 
-        if mismatch.score >= threshold:
+        if no_progress_count >= NO_PROGRESS_LIMIT:
+            break
+
+        if (
+            mismatch.score >= threshold
+            and not mismatch.contradictions
+            and not mismatch.unsupported_claims
+        ):
             explain = _build_explain(mismatch)
             iterations_payload = [item.model_dump() for item in iterations]
             result_payload: dict[str, Any] = {

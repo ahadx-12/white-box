@@ -12,36 +12,60 @@ This repo is a monorepo with three Railway services:
 2. Add the **Postgres** plugin.
 3. Add the **Redis** plugin.
 
-## 2) Create services from the same repo
+## 2) Create services from the same repo (no guess setup)
+
+> **Why this exists:** Railway sometimes ignores nested `railway.json`. The root
+> entrypoint (`main.py`) plus explicit start commands guarantee a stable deploy.
 
 ### A) trustai-api
 
 - **Root Directory**: `/`
-- **Config Path**: `/apps/api/railway.json`
+- **Build Command**:
+  - `python -m pip install --upgrade pip && python -m pip install -r requirements.txt`
+- **Start Command (choose ONE)**:
+  - `TRUSTAI_SERVICE=api python main.py`
+  - `bash scripts/railway_start_api.sh`
+- **Healthcheck path**: `/v1/health`
 - **Attach plugins**: Postgres + Redis
 - **Environment variables**:
+  - `TRUSTAI_SERVICE=api`
   - `TRUSTAI_LLM_MODE=live`
-  - `TRUSTAI_DB_AUTOCREATE=1`
   - `OPENAI_API_KEY=...` (or `OPEN_AI_KEY`)
   - `ANTHROPIC_API_KEY=...` (or `CLAUD_AI_KEY`)
-  - (optional) `OPENAI_MODEL`, `CLAUDE_MODEL`, `TRUSTAI_PACKS_ROOT`, `TRUSTAI_THRESHOLD`, `TRUSTAI_MAX_ITERS`, `TRUSTAI_DEBUG_DEFAULT`
+  - `DATABASE_URL` (from Postgres plugin)
+  - `REDIS_URL` (from Redis plugin)
+  - `TRUSTAI_DB_AUTOCREATE=1`
+  - `TRUSTAI_THRESHOLD=0.92`
+  - `TRUSTAI_MAX_ITERS=5`
+  - (optional) `OPENAI_MODEL`, `CLAUDE_MODEL`, `TRUSTAI_PACKS_ROOT`, `TRUSTAI_DEBUG_DEFAULT`, `TRUSTAI_CORS_ORIGINS`
 - **Networking**: expose a public domain (Railway will generate one)
 
 ### B) trustai-worker
 
 - **Root Directory**: `/`
-- **Config Path**: `/apps/worker/railway.json`
+- **Build Command**:
+  - `python -m pip install --upgrade pip && python -m pip install -r requirements.txt`
+- **Start Command (choose ONE)**:
+  - `TRUSTAI_SERVICE=worker python main.py`
+  - `bash scripts/railway_start_worker.sh`
 - **Attach plugins**: Redis
 - **Environment variables**:
+  - `TRUSTAI_SERVICE=worker`
   - `TRUSTAI_LLM_MODE=live`
   - `OPENAI_API_KEY=...` (or `OPEN_AI_KEY`)
   - `ANTHROPIC_API_KEY=...` (or `CLAUD_AI_KEY`)
+  - `DATABASE_URL`
+  - `REDIS_URL`
 - **Networking**: no public domain required
 
 ### C) trustai-dashboard
 
-- **Root Directory**: `/apps/dashboard`
-- **Config Path**: `/apps/dashboard/railway.json`
+- **Root Directory**: `apps/dashboard`
+- **Build Command**:
+  - `npm ci && npm run build`
+- **Start Command (choose ONE)**:
+  - `npm run start -- -p $PORT`
+  - `bash ../scripts/railway_start_dashboard.sh`
 - **Environment variables**:
   - `NEXT_PUBLIC_TRUSTAI_API_BASE=https://<trustai-api-domain>`
 - **Networking**: expose a public domain
@@ -64,6 +88,12 @@ curl -sSf https://<trustai-api-domain>/v1/verify \
   -d '{"input":"The sky is blue."}'
 ```
 
+Smoke script:
+
+```bash
+python scripts/railway_smoke.py --base-url https://<trustai-api-domain> --pack general --require-async
+```
+
 ## 4) Live convergence runbook (Railway)
 
 Required env vars for API + worker:
@@ -84,7 +114,7 @@ Optional:
 Once deployed, run the live convergence harness against the public API domain:
 
 ```bash
-python scripts/live_convergence.py --base-url https://<trustai-api-domain>
+python scripts/live_convergence.py --base-url https://<trustai-api-domain> --pack general
 ```
 
 Expected behavior:

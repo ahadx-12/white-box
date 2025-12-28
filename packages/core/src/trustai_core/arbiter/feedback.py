@@ -22,18 +22,28 @@ def _format_contradictions(pairs: list) -> str:
     return "\n".join(lines)
 
 
-def build_feedback(mismatch: MismatchReport, force_claims: list[AtomModel] | None = None) -> str:
+def build_feedback(
+    mismatch: MismatchReport,
+    force_claims: list[AtomModel] | None = None,
+    must_not_claim: list[AtomModel] | None = None,
+    output_format: str | None = None,
+) -> str:
     force_claims = force_claims or []
+    must_not_claim = must_not_claim or []
+    output_format = output_format or "First line: FINAL_ANSWER: ... ; Then a short explanation"
     parts = [
         "MUST REMOVE:",
         _format_atoms(mismatch.unsupported_claims),
         "MUST ADD:",
         _format_atoms(mismatch.missing_required + force_claims),
+        "MUST NOT CLAIM:",
+        _format_atoms(must_not_claim),
         "CONTRADICTIONS:",
         _format_contradictions(mismatch.contradictions),
         (
             "REWRITE RULE: keep answer consistent with Evidence Atoms; "
             "do not introduce new factual claims."
         ),
+        f"OUTPUT FORMAT: {output_format}",
     ]
     return "\n".join(parts)

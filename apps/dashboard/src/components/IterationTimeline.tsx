@@ -3,8 +3,12 @@ import { formatScore } from "@/lib/utils";
 
 export default function IterationTimeline({
   iterations,
+  selected,
+  onSelect,
 }: {
   iterations: IterationSummary[];
+  selected?: number;
+  onSelect?: (iteration: IterationSummary) => void;
 }) {
   if (!iterations.length) {
     return <p className="text-sm text-slate-400">No iterations yet.</p>;
@@ -15,7 +19,13 @@ export default function IterationTimeline({
       {iterations.map((iteration) => (
         <li
           key={iteration.i}
-          className="rounded-md border border-slate-800 bg-slate-900/60 p-3"
+          className={`rounded-md border p-3 transition ${
+            selected === iteration.i
+              ? "border-indigo-400/60 bg-indigo-900/40"
+              : "border-slate-800 bg-slate-900/60 hover:border-slate-700"
+          }`}
+          onClick={() => onSelect?.(iteration)}
+          role={onSelect ? "button" : undefined}
         >
           <div className="flex items-center justify-between text-xs uppercase text-slate-400">
             <span>Iteration {iteration.i}</span>
