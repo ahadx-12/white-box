@@ -59,12 +59,28 @@ class VerifierService:
             self._reasoner = Reasoner(self._reasoner_client_factory())
         return self._reasoner
 
+    def debug_info(self) -> dict[str, object]:
+        perceiver_calls = []
+        reasoner_calls = []
+        if self._perceiver and hasattr(self._perceiver, "get_debug_calls"):
+            perceiver_calls = self._perceiver.get_debug_calls()
+        if self._reasoner and hasattr(self._reasoner, "get_debug_calls"):
+            reasoner_calls = self._reasoner.get_debug_calls()
+        return {"perceiver": perceiver_calls, "reasoner": reasoner_calls}
+
+    def reset_debug(self) -> None:
+        if self._perceiver and hasattr(self._perceiver, "reset_debug"):
+            self._perceiver.reset_debug()
+        if self._reasoner and hasattr(self._reasoner, "reset_debug"):
+            self._reasoner.reset_debug()
+
     async def verify_sync(
         self,
         input_text: str,
         pack: str,
         options: VerifyOptions | None = None,
     ) -> VerificationResult:
+        self.reset_debug()
         resolved_options = options or VerifyOptions()
         max_iters = resolved_options.max_iters or 5
         threshold = (

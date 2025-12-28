@@ -12,12 +12,17 @@ def test_contradiction_conflict_detected():
     pack = load_pack("general", memory, storage_root=Path("storage/packs"))
     encoder = AtomEncoder(memory)
 
-    evidence = [AtomModel(subject="door", predicate="state", obj="open", is_true=True)]
-    claim = [AtomModel(subject="door", predicate="state", obj="closed", is_true=True)]
+    evidence = [
+        AtomModel(subject="door", predicate="state", obj="open", is_true=True, confidence=1.0)
+    ]
+    claim = [
+        AtomModel(subject="door", predicate="state", obj="closed", is_true=True, confidence=1.0)
+    ]
 
     mismatch = evaluate(evidence, claim, pack, encoder)
     assert mismatch.score < SCORE_THRESHOLD
     assert mismatch.ontology_conflicts
+    assert mismatch.contradictions
 
 
 def test_unsupported_claims_flagged():
@@ -25,6 +30,6 @@ def test_unsupported_claims_flagged():
     pack = load_pack("general", memory, storage_root=Path("storage/packs"))
     encoder = AtomEncoder(memory)
 
-    claim = [AtomModel(subject="sky", predicate="color", obj="green", is_true=True)]
+    claim = [AtomModel(subject="sky", predicate="color", obj="green", is_true=True, confidence=1.0)]
     mismatch = evaluate([], claim, pack, encoder)
     assert mismatch.unsupported_claims

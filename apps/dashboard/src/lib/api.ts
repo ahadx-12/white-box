@@ -6,7 +6,8 @@ import type {
   VerifyOptions,
 } from "@/lib/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_BASE =
+  process.env.NEXT_PUBLIC_TRUSTAI_API_BASE ?? "http://localhost:8000";
 
 const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, init);
@@ -25,6 +26,7 @@ export const verifySync = async (
   pack: string,
   requestId: string,
   options?: VerifyOptions,
+  debug?: boolean,
 ): Promise<VerificationResponse> =>
   fetchJson<VerificationResponse>(`${API_BASE}/v1/verify`, {
     method: "POST",
@@ -32,6 +34,7 @@ export const verifySync = async (
       "Content-Type": "application/json",
       "X-TrustAI-Pack": pack,
       "X-Request-Id": requestId,
+      ...(debug ? { "X-TrustAI-Debug": "1" } : {}),
     },
     body: JSON.stringify({ input, options }),
   });
@@ -41,6 +44,7 @@ export const verifyAsync = async (
   pack: string,
   requestId: string,
   options?: VerifyOptions,
+  debug?: boolean,
 ): Promise<VerifyAsyncResponse> =>
   fetchJson<VerifyAsyncResponse>(`${API_BASE}/v1/verify?mode=async`, {
     method: "POST",
@@ -48,6 +52,7 @@ export const verifyAsync = async (
       "Content-Type": "application/json",
       "X-TrustAI-Pack": pack,
       "X-Request-Id": requestId,
+      ...(debug ? { "X-TrustAI-Debug": "1" } : {}),
     },
     body: JSON.stringify({ input, options }),
   });

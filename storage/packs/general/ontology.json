@@ -1,14 +1,23 @@
 {
   "opposites": [
     ["safe", "unsafe"],
-    ["open", "closed"]
+    ["open", "closed"],
+    ["legal", "illegal"],
+    ["true", "false"],
+    ["alive", "dead"],
+    ["present", "absent"]
   ],
   "mutex_sets": [
     ["open", "closed"],
+    ["safe", "unsafe"],
+    ["legal", "illegal"],
     ["true", "false"]
   ],
   "aliases": {
     "hazardous": "unsafe",
-    "secured": "safe"
+    "secured": "safe",
+    "shut": "closed",
+    "permitted": "legal",
+    "forbidden": "illegal"
   }
 }
