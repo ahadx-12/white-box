@@ -31,8 +31,8 @@ where = ["packages/core/src"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
-testpaths = ["packages/core/tests"]
-pythonpath = ["packages/core/src"]
+testpaths = ["packages/core/tests", "apps/api/tests", "apps/worker/tests"]
+pythonpath = ["packages/core/src", "apps/api/src", "apps/worker/src"]
 
 [tool.ruff]
 line-length = 100
