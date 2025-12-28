@@ -21,7 +21,7 @@ class Proof(Base):
     score: Mapped[float] = mapped_column(Float, nullable=False)
     payload_json: Mapped[str] = mapped_column(Text, nullable=False)
     request_hash: Mapped[str | None] = mapped_column(String, nullable=True)
-    metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    metadata_json: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
 
 
 class Job(Base):

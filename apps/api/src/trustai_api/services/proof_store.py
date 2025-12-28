@@ -21,7 +21,7 @@ class ProofStore:
         session: Session,
         payload: dict[str, Any],
         request_hash: str | None = None,
-        metadata: dict[str, Any] | None = None,
+        metadata_json: dict[str, Any] | None = None,
     ) -> ProofCreateResult:
         proof_id = payload.get("proof_id")
         if not proof_id:
@@ -43,7 +43,7 @@ class ProofStore:
             score=score,
             payload_json=orjson.dumps(payload, option=orjson.OPT_SORT_KEYS).decode(),
             request_hash=request_hash,
-            metadata=metadata,
+            metadata_json=metadata_json,
         )
         session.add(proof)
         session.commit()
