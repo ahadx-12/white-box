@@ -116,14 +116,7 @@ async def verify(
     try:
         result = await verifier.verify_sync(body.input, pack, options)
     except LLMError as exc:
-        return JSONResponse(
-            status_code=502,
-            content={
-                "status": "upstream_error",
-                "message": str(exc),
-                "hint": "Set TRUSTAI_ANTHROPIC_MODEL/OPENAI_API_KEY/ANTHROPIC_API_KEY",
-            },
-        )
+        raise HTTPException(status_code=503, detail=f"Upstream LLM error: {exc}") from exc
     debug_enabled = x_trustai_debug == "1" or (x_trustai_debug is None and settings.debug_default)
     debug_info = verifier.debug_info() if debug_enabled else None
     payload = normalize_verification_result(

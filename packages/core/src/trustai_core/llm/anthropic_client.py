@@ -27,6 +27,10 @@ DEFAULT_CLAUDE_MODELS = [
     "claude-3-sonnet-20240229",
 ]
 DEFAULT_CLAUDE_MODEL = DEFAULT_CLAUDE_MODELS[0]
+_CANON_MODEL_ALIASES = {
+    "claude-3.5-sonnet": "claude-3-5-sonnet-20241022",
+    "claude-3.5-haiku": "claude-3-5-haiku-20241022",
+}
 
 
 class ModelNotFoundError(LLMError):
@@ -37,6 +41,10 @@ def _parse_model_list(value: str | None) -> list[str]:
     if not value:
         return []
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _normalize_model_id(model: str) -> str:
+    return _CANON_MODEL_ALIASES.get(model.strip(), model.strip())
 
 
 def _dedupe(models: list[str]) -> list[str]:
@@ -62,13 +70,20 @@ class AnthropicClient(LLMClient):
         if not resolved_key:
             raise LLMError("Anthropic API key is missing")
         self._client = AsyncAnthropic(api_key=resolved_key, timeout=timeout_s)
-        preferred_model = os.getenv("TRUSTAI_ANTHROPIC_MODEL")
-        fallback_models = _parse_model_list(os.getenv("TRUSTAI_ANTHROPIC_MODEL_FALLBACKS"))
+        preferred_model = (
+            os.getenv("TRUSTAI_ANTHROPIC_MODEL")
+            or os.getenv("CLAUDE_MODEL")
+            or os.getenv("ANTHROPIC_MODEL")
+        )
         candidates: list[str] = []
         if preferred_model:
-            candidates.append(preferred_model)
+            candidates.append(_normalize_model_id(preferred_model))
         elif model:
-            candidates.append(model)
+            candidates.append(_normalize_model_id(model))
+        fallback_models = [
+            _normalize_model_id(m)
+            for m in _parse_model_list(os.getenv("TRUSTAI_ANTHROPIC_MODEL_FALLBACKS"))
+        ]
         candidates.extend(fallback_models)
         candidates.extend(DEFAULT_CLAUDE_MODELS)
         self._models = _dedupe(candidates)
