@@ -5,7 +5,7 @@ import ChatPanel from "@/components/ChatPanel";
 import ControlBar from "@/components/ControlBar";
 import ProofPanel from "@/components/ProofPanel";
 import ThreeBackground from "@/components/ThreeBackground";
-import { fetchPacks } from "@/lib/api";
+import { fetchHealth, fetchPacks } from "@/lib/api";
 import type { VerificationResponse, VerifyOptions } from "@/lib/types";
 
 export default function Page() {
@@ -22,6 +22,7 @@ export default function Page() {
   const [status, setStatus] = useState<"idle" | "verifying" | "verified" | "failed">(
     "idle",
   );
+  const [apiStatus, setApiStatus] = useState<"checking" | "up" | "down">("checking");
 
   const options: VerifyOptions | undefined = useMemo(() => {
     const parsedMax = Number(maxIters);
@@ -53,6 +54,26 @@ export default function Page() {
     loadPacks();
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    const checkHealth = async () => {
+      try {
+        await fetchHealth();
+        if (active) {
+          setApiStatus("up");
+        }
+      } catch {
+        if (active) {
+          setApiStatus("down");
+        }
+      }
+    };
+    checkHealth();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-950 p-6 text-slate-100">
       <ThreeBackground status={status} reducedMotion={reduceMotion} />
@@ -64,6 +85,26 @@ export default function Page() {
           Track convergence, visualize proof artifacts, and debug verification loops
           in real time.
         </p>
+        <div className="flex items-center gap-2 text-xs text-slate-300">
+          <span
+            className={`h-2 w-2 rounded-full ${
+              apiStatus === "up"
+                ? "bg-emerald-400"
+                : apiStatus === "down"
+                  ? "bg-rose-400"
+                  : "bg-amber-400"
+            }`}
+            aria-hidden="true"
+          />
+          <span>
+            API status:{" "}
+            {apiStatus === "checking"
+              ? "Checking..."
+              : apiStatus === "up"
+                ? "Online"
+                : "Offline"}
+          </span>
+        </div>
       </header>
 
       <div className="space-y-6">
