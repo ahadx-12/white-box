@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from trustai_core.llm.base import LLMError
 from trustai_api.routes.utils import normalize_verification_result
 from trustai_core.schemas.proof import IterationTrace, MismatchReport, VerificationResult
 
@@ -69,6 +70,19 @@ class FakeVerifier:
         return self.debug_calls
 
 
+class ErrorVerifier:
+    async def verify_sync(
+        self,
+        input_text: str,
+        pack: str,
+        options: Any = None,
+    ) -> VerificationResult:
+        raise LLMError("model not found")
+
+    def debug_info(self) -> dict[str, object]:
+        return {}
+
+
 def test_verify_sync(client, app):
     result = _build_result()
     app.state.verifier_service = FakeVerifier(result)
@@ -97,3 +111,13 @@ def test_verify_sync_debug_header_adds_debug(client, app):
     assert response.status_code == 200
     payload = response.json()
     assert payload["debug"]["perceiver"]
+
+
+def test_verify_sync_llm_error_returns_503(client, app):
+    app.state.verifier_service = ErrorVerifier()
+
+    response = client.post("/v1/verify", json={"input": "Hello"})
+
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["detail"] == "Upstream LLM error: model not found"
