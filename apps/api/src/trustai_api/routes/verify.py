@@ -5,7 +5,9 @@ from uuid import uuid4
 
 import orjson
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from trustai_core.llm.base import LLMError
 from trustai_core.utils.hashing import sha256_canonical_json
 
 from trustai_api.deps import get_db, get_queue, get_settings_dep, get_verifier_service
@@ -36,7 +38,7 @@ async def verify(
     settings: Settings = Depends(get_settings_dep),
     queue: Any = Depends(get_queue),
     verifier: VerifierService = Depends(get_verifier_service),
-) -> dict[str, Any]:
+) -> dict[str, Any] | JSONResponse:
     if mode and body.mode and mode != body.mode:
         raise HTTPException(status_code=400, detail="Mode mismatch between query and body")
     resolved_mode = body.mode or mode or "sync"
@@ -111,7 +113,17 @@ async def verify(
             max_iters=body.options.max_iters,
             threshold=body.options.threshold,
         )
-    result = await verifier.verify_sync(body.input, pack, options)
+    try:
+        result = await verifier.verify_sync(body.input, pack, options)
+    except LLMError as exc:
+        return JSONResponse(
+            status_code=502,
+            content={
+                "status": "upstream_error",
+                "message": str(exc),
+                "hint": "Set TRUSTAI_ANTHROPIC_MODEL/OPENAI_API_KEY/ANTHROPIC_API_KEY",
+            },
+        )
     debug_enabled = x_trustai_debug == "1" or (x_trustai_debug is None and settings.debug_default)
     debug_info = verifier.debug_info() if debug_enabled else None
     payload = normalize_verification_result(

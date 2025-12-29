@@ -21,6 +21,9 @@ const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
 export const fetchPacks = async () =>
   fetchJson<PacksResponse>(`${API_BASE}/v1/packs`);
 
+export const fetchHealth = async () =>
+  fetchJson<{ status: string }>(`${API_BASE}/v1/health`);
+
 export const verifySync = async (
   input: string,
   pack: string,

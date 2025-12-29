@@ -50,7 +50,12 @@ def get_settings() -> Settings:
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     storage_root = Path(os.getenv("TRUSTAI_PACKS_ROOT", "storage/packs"))
     openai_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-    claude_model = os.getenv("CLAUDE_MODEL", "claude-3.5-sonnet")
+    claude_model_env = os.getenv("TRUSTAI_ANTHROPIC_MODEL")
+    claude_model = (
+        claude_model_env
+        if claude_model_env
+        else os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
+    )
     auto_create_tables_env = os.getenv("TRUSTAI_DB_AUTOCREATE")
     if auto_create_tables_env is None:
         auto_create_tables_env = os.getenv("TRUSTAI_AUTO_CREATE_TABLES", "1")

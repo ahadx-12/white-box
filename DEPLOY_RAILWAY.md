@@ -32,6 +32,8 @@ This repo is a monorepo with three Railway services:
   - `TRUSTAI_LLM_MODE=live`
   - `OPENAI_API_KEY=...` (or `OPEN_AI_KEY`)
   - `ANTHROPIC_API_KEY=...` (or `CLAUD_AI_KEY`)
+  - `TRUSTAI_ANTHROPIC_MODEL=...` (optional preferred Claude model)
+  - `TRUSTAI_ANTHROPIC_MODEL_FALLBACKS=...` (optional comma-separated fallbacks)
   - `DATABASE_URL` (from Postgres plugin)
   - `REDIS_URL` (from Redis plugin)
   - `TRUSTAI_DB_AUTOCREATE=1`
@@ -54,6 +56,8 @@ This repo is a monorepo with three Railway services:
   - `TRUSTAI_LLM_MODE=live`
   - `OPENAI_API_KEY=...` (or `OPEN_AI_KEY`)
   - `ANTHROPIC_API_KEY=...` (or `CLAUD_AI_KEY`)
+  - `TRUSTAI_ANTHROPIC_MODEL=...` (optional preferred Claude model)
+  - `TRUSTAI_ANTHROPIC_MODEL_FALLBACKS=...` (optional comma-separated fallbacks)
   - `DATABASE_URL`
   - `REDIS_URL`
 - **Networking**: no public domain required
@@ -69,6 +73,12 @@ This repo is a monorepo with three Railway services:
 - **Environment variables**:
   - `NEXT_PUBLIC_TRUSTAI_API_BASE=https://<trustai-api-domain>`
 - **Networking**: expose a public domain
+
+## Where is my dashboard URL?
+
+Use the public domain Railway assigns to the **trustai-dashboard** service. The
+dashboard lives at the root path (`/`). API docs are served by the API service at
+`/docs` (e.g. `https://<trustai-api-domain>/docs`).
 
 ## 3) Post-deploy verification
 
@@ -91,7 +101,7 @@ curl -sSf https://<trustai-api-domain>/v1/verify \
 Smoke script:
 
 ```bash
-python scripts/railway_smoke.py --base-url https://<trustai-api-domain> --pack general --require-async
+python scripts/railway_live_smoke.py --base-url https://<trustai-api-domain> --pack general
 ```
 
 ## 4) Live convergence runbook (Railway)
@@ -101,6 +111,8 @@ Required env vars for API + worker:
 - `TRUSTAI_LLM_MODE=live`
 - `OPENAI_API_KEY=...` (or `OPEN_AI_KEY`)
 - `ANTHROPIC_API_KEY=...` (or `CLAUD_AI_KEY`)
+- `TRUSTAI_ANTHROPIC_MODEL=...` (optional preferred Claude model)
+- `TRUSTAI_ANTHROPIC_MODEL_FALLBACKS=...` (optional comma-separated fallbacks)
 - `DATABASE_URL` (from Railway Postgres plugin)
 - `REDIS_URL` (from Railway Redis plugin)
 
