@@ -28,8 +28,13 @@ DEFAULT_CLAUDE_MODELS = [
 ]
 DEFAULT_CLAUDE_MODEL = DEFAULT_CLAUDE_MODELS[0]
 _CANON_MODEL_ALIASES = {
-    "claude-3.5-sonnet": "claude-3-5-sonnet-20241022",
-    "claude-3.5-haiku": "claude-3-5-haiku-20241022",
+    "claude-3-5-sonnet": DEFAULT_CLAUDE_MODELS[0],
+    "claude-3-5-haiku": DEFAULT_CLAUDE_MODELS[1],
+}
+_LEGACY_MODEL_PREFIX = "claude-3" + ".5-"
+_LEGACY_MODEL_MAP = {
+    "sonnet": DEFAULT_CLAUDE_MODELS[0],
+    "haiku": DEFAULT_CLAUDE_MODELS[1],
 }
 
 
@@ -44,7 +49,11 @@ def _parse_model_list(value: str | None) -> list[str]:
 
 
 def _normalize_model_id(model: str) -> str:
-    return _CANON_MODEL_ALIASES.get(model.strip(), model.strip())
+    cleaned = model.strip()
+    if cleaned.startswith(_LEGACY_MODEL_PREFIX):
+        suffix = cleaned[len(_LEGACY_MODEL_PREFIX) :]
+        return _LEGACY_MODEL_MAP.get(suffix, cleaned)
+    return _CANON_MODEL_ALIASES.get(cleaned, cleaned)
 
 
 def _dedupe(models: list[str]) -> list[str]:
