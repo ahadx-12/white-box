@@ -19,4 +19,3 @@ psycopg2-binary
 redis
 rq
 python-dotenv
-./packages/core
