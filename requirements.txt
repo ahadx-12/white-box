@@ -8,7 +8,7 @@ tenacity
 pytest
 pytest-asyncio
 hypothesis
-numpy
+numpy>=1.24.0
 ruff
 mypy
 fastapi
@@ -19,4 +19,4 @@ psycopg2-binary
 redis
 rq
 python-dotenv
--e packages/core
+./packages/core

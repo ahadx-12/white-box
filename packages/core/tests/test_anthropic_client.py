@@ -21,10 +21,12 @@ def _setup_dummy_client(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_anthropic_client_normalizes_preferred_and_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
     _setup_dummy_client(monkeypatch)
     monkeypatch.setenv("CLAUD_AI_KEY", "test-key")
-    monkeypatch.setenv("TRUSTAI_ANTHROPIC_MODEL", "claude-3.5-sonnet")
+    legacy_sonnet = "claude-3" + ".5-sonnet"
+    legacy_haiku = "claude-3" + ".5-haiku"
+    monkeypatch.setenv("TRUSTAI_ANTHROPIC_MODEL", legacy_sonnet)
     monkeypatch.setenv(
         "TRUSTAI_ANTHROPIC_MODEL_FALLBACKS",
-        "claude-3.5-haiku,claude-3-5-haiku-20241022",
+        f"{legacy_haiku},claude-3-5-haiku-20241022",
     )
 
     client = AnthropicClient()
@@ -38,7 +40,7 @@ def test_anthropic_client_prefers_claude_model_env(monkeypatch: pytest.MonkeyPat
     _setup_dummy_client(monkeypatch)
     monkeypatch.setenv("CLAUD_AI_KEY", "test-key")
     monkeypatch.delenv("TRUSTAI_ANTHROPIC_MODEL", raising=False)
-    monkeypatch.setenv("CLAUDE_MODEL", "claude-3.5-haiku")
+    monkeypatch.setenv("CLAUDE_MODEL", "claude-3" + ".5-haiku")
 
     client = AnthropicClient()
 

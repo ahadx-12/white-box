@@ -18,7 +18,7 @@ LLM orchestration layer (agents + correction loop + proof traces).
 - max_iters = `5`
 - claim_support_threshold = `0.20`
 - perceiver model = `gpt-4o-mini`
-- reasoner model = `claude-3.5-sonnet`
+- reasoner model = `claude-3-5-sonnet-20241022`
 
 ## Demo
 
