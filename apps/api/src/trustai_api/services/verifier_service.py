@@ -10,6 +10,8 @@ from trustai_core.llm.anthropic_client import AnthropicClient
 from trustai_core.llm.base import LLMClient
 from trustai_core.llm.openai_client import OpenAIClient
 from trustai_core.orchestrator.loop import VerificationFailure, verify_and_fix
+from trustai_core.packs.registry import PackContext, get_pack_runner
+from trustai_core.packs.tariff.models import TariffVerificationResult
 from trustai_core.schemas.proof import VerificationResult
 
 from trustai_api.services.mock_llm import MockLLMClient
@@ -79,7 +81,7 @@ class VerifierService:
         input_text: str,
         pack: str,
         options: VerifyOptions | None = None,
-    ) -> VerificationResult:
+    ) -> VerificationResult | TariffVerificationResult:
         self.reset_debug()
         resolved_options = options or VerifyOptions()
         max_iters = resolved_options.max_iters or 5
@@ -88,6 +90,19 @@ class VerifierService:
             if resolved_options.threshold is not None
             else SCORE_THRESHOLD
         )
+        pack_runner = get_pack_runner(
+            pack,
+            PackContext(
+                llm_mode=self._settings.llm_mode,
+                openai_model=self._settings.openai_model,
+                claude_model=self._settings.claude_model,
+                openai_client_factory=self._openai_client,
+                anthropic_client_factory=self._anthropic_client,
+            ),
+        )
+        if pack_runner:
+            options_payload = {"max_iters": max_iters, "threshold": threshold}
+            return await pack_runner.run(input_text, options_payload)
         try:
             return await self._verifier_fn(
                 user_text=input_text,
@@ -100,3 +115,13 @@ class VerifierService:
             )
         except VerificationFailure as exc:
             return exc.result
+
+    def _openai_client(self) -> LLMClient:
+        if self._settings.llm_mode == "mock":
+            return MockLLMClient()
+        return OpenAIClient(model=self._settings.openai_model)
+
+    def _anthropic_client(self) -> LLMClient:
+        if self._settings.llm_mode == "mock":
+            return MockLLMClient()
+        return AnthropicClient(model=self._settings.claude_model)

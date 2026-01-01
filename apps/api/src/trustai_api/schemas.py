@@ -14,6 +14,7 @@ class VerifyRequest(BaseModel):
     input: str
     mode: Literal["sync", "async"] | None = None
     options: VerifyOptions | None = None
+    pack: str | None = None
 
 
 class IterationTraceResponse(BaseModel):
@@ -27,6 +28,8 @@ class IterationTraceResponse(BaseModel):
     missing: list[str]
     feedback_text: str
     answer_delta_summary: str
+    hdc_score: float | None = None
+    mismatch_report: str | None = None
 
 
 class ExplainSummaryResponse(BaseModel):

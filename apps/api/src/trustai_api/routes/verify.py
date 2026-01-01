@@ -45,7 +45,7 @@ async def verify(
     if resolved_mode not in {"sync", "async"}:
         raise HTTPException(status_code=400, detail="Invalid mode")
 
-    pack = resolve_pack(settings, x_pack)
+    pack = resolve_pack(settings, x_pack or body.pack)
 
     idempotency_store = IdempotencyStore()
     job_store = JobStore()
