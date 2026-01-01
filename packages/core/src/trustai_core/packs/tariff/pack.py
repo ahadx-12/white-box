@@ -85,6 +85,7 @@ class TariffPack:
             )
         iterations: list[TariffVerifyIteration] = []
         critic_outputs: list[TariffCritique] = []
+        proposal_history: list[TariffDossier] = []
         dossier: TariffDossier | None = None
         previous_bundle: list[int] | None = None
         mismatch_report: str = ""
@@ -110,6 +111,7 @@ class TariffPack:
                         _tariff_dossier_schema(),
                     )
                 dossier = await router.proposer.complete_tariff(prompt)
+                proposal_history.append(dossier)
                 critique = await router.critic.complete_critique(
                     build_tariff_critic_prompt(
                         input_text,
@@ -169,6 +171,7 @@ class TariffPack:
             tariff_dossier=dossier,
             critic_outputs=critic_outputs,
             model_routing=router.model_routing,
+            proposal_history=proposal_history,
         )
 
     async def _run_with_fixture(
@@ -189,6 +192,7 @@ class TariffPack:
             )
         iterations: list[TariffVerifyIteration] = []
         critic_outputs: list[TariffCritique] = []
+        proposal_history: list[TariffDossier] = []
         dossier: TariffDossier | None = None
         previous_bundle: list[int] | None = None
         mismatch_report = ""
@@ -198,6 +202,7 @@ class TariffPack:
             proposal_payload = proposals[min(i - 1, len(proposals) - 1)]
             critique_payload = critiques[min(i - 1, len(critiques) - 1)]
             dossier = TariffDossier.model_validate(proposal_payload)
+            proposal_history.append(dossier)
             critique = TariffCritique.model_validate(critique_payload)
             iteration, previous_bundle, mismatch_report = _evaluate_iteration(
                 i=i,
@@ -245,6 +250,7 @@ class TariffPack:
             tariff_dossier=dossier,
             critic_outputs=critic_outputs,
             model_routing=model_routing,
+            proposal_history=proposal_history,
         )
 
 
