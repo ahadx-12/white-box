@@ -40,12 +40,9 @@ def _env_has_anthropic_key() -> bool:
 
 
 def _require_live_keys() -> list[str]:
-    missing: list[str] = []
-    if not _env_has_openai_key():
-        missing.append("OPENAI_API_KEY")
-    if not _env_has_anthropic_key():
-        missing.append("ANTHROPIC_API_KEY")
-    return missing
+    if _env_has_openai_key() or _env_has_anthropic_key():
+        return []
+    return ["OPENAI_API_KEY/OPEN_AI_KEY or ANTHROPIC_API_KEY/CLAUD_AI_KEY"]
 
 
 def _parse_json_response(response: httpx.Response) -> dict[str, Any] | None:

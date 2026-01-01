@@ -50,7 +50,7 @@ def test_live_mode_requires_keys(monkeypatch) -> None:
     try:
         get_settings()
     except ValueError as exc:
-        assert "TRUSTAI_LLM_MODE=live requires OPENAI_API_KEY or OPEN_AI_KEY" in str(exc)
+        assert "TRUSTAI_LLM_MODE=live requires" in str(exc)
     else:
         raise AssertionError("Expected live mode to require keys")
 

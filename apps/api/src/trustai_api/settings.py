@@ -37,10 +37,11 @@ def _resolve_anthropic_key() -> str | None:
 def _validate_live_keys(llm_mode: str) -> None:
     if llm_mode != "live":
         return
-    if not _resolve_openai_key():
-        raise ValueError("TRUSTAI_LLM_MODE=live requires OPENAI_API_KEY or OPEN_AI_KEY")
-    if not _resolve_anthropic_key():
-        raise ValueError("TRUSTAI_LLM_MODE=live requires ANTHROPIC_API_KEY or CLAUD_AI_KEY")
+    if not (_resolve_openai_key() or _resolve_anthropic_key()):
+        raise ValueError(
+            "TRUSTAI_LLM_MODE=live requires OPENAI_API_KEY, OPEN_AI_KEY, "
+            "ANTHROPIC_API_KEY, or CLAUD_AI_KEY"
+        )
 
 
 @lru_cache
