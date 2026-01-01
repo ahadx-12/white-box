@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import HTTPException
 from pydantic import ValidationError
 from trustai_core.schemas.atoms import AtomModel
+from trustai_core.packs.tariff.models import TariffVerificationResult
 from trustai_core.schemas.proof import VerificationResult
 
 from trustai_api.settings import Settings
@@ -65,10 +66,12 @@ def _normalize_explain_entries(entries: list[object]) -> list[str]:
 
 
 def normalize_verification_result(
-    result: VerificationResult,
+    result: VerificationResult | TariffVerificationResult,
     include_debug: bool = False,
     debug_info: dict[str, object] | None = None,
 ) -> dict[str, object]:
+    if isinstance(result, TariffVerificationResult):
+        return _normalize_tariff_result(result, include_debug, debug_info)
     iterations: list[dict[str, object]] = []
     similarity_history: list[float] = []
     for iteration in result.iterations:
@@ -120,6 +123,59 @@ def normalize_verification_result(
             f"conflicts={len(key_conflicts)}"
         )
 
+    payload: dict[str, object] = {
+        "status": result.status,
+        "proof_id": result.proof_id,
+        "pack": result.pack,
+        "pack_fingerprint": result.pack_fingerprint,
+        "evidence_manifest_hash": result.evidence_manifest_hash,
+        "final_answer": result.final_answer,
+        "iterations": iterations,
+        "similarity_history": similarity_history,
+        "explain": {
+            "summary": summary,
+            "key_conflicts": key_conflicts,
+            "unsupported_claims": unsupported_claims,
+            "missing_required": missing_required,
+        },
+        "proof": result.model_dump(),
+    }
+    if include_debug and debug_info:
+        payload["debug"] = debug_info
+    return payload
+
+
+def _normalize_tariff_result(
+    result: TariffVerificationResult,
+    include_debug: bool = False,
+    debug_info: dict[str, object] | None = None,
+) -> dict[str, object]:
+    iterations: list[dict[str, object]] = []
+    similarity_history: list[float] = []
+    for iteration in result.iterations:
+        iterations.append(
+            {
+                "i": iteration.i,
+                "score": round(iteration.score, 6),
+                "accepted": iteration.accepted,
+                "rejected_because": iteration.rejected_because,
+                "conflicts": iteration.conflicts,
+                "top_conflicts": iteration.top_conflicts,
+                "unsupported": iteration.unsupported,
+                "missing": iteration.missing,
+                "feedback_text": iteration.feedback_text,
+                "answer_delta_summary": iteration.answer_delta_summary,
+                "hdc_score": iteration.hdc_score,
+                "mismatch_report": iteration.mismatch_report,
+            }
+        )
+        similarity_history.append(round(iteration.score, 6))
+
+    explain_payload = result.explain or {}
+    summary = explain_payload.get("summary") or ""
+    key_conflicts = list(explain_payload.get("key_conflicts", []))
+    unsupported_claims = list(explain_payload.get("unsupported_claims", []))
+    missing_required = list(explain_payload.get("missing_required", []))
     payload: dict[str, object] = {
         "status": result.status,
         "proof_id": result.proof_id,

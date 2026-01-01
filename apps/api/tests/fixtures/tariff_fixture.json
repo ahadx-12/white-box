@@ -1,0 +1,111 @@
+{
+  "proposals": [
+    {
+      "product_summary": "Athletic sneaker with textile upper and rubber outsole.",
+      "assumptions": [
+        "Classification based on textile upper and rubber outsole.",
+        "No preferential trade program claimed.",
+        "Value is primarily in the upper.",
+        "No waterproofing." 
+      ],
+      "baseline": {
+        "hts_code": "6404.11.90",
+        "duty_rate_pct": 20.0,
+        "duty_basis": "ad valorem",
+        "rationale": "Footwear with textile upper, rubber outsole, athletic use.",
+        "confidence": 0.6
+      },
+      "mutations": [
+        {
+          "id": "m1",
+          "title": "Add felt/fabric outer sole coverage",
+          "category": "design",
+          "change": "Increase felt coverage to qualify for different subheading.",
+          "expected_effect": "Potential shift to felt-sole classification.",
+          "expected_hts_change": "6404.19",
+          "expected_duty_rate_pct": 10.0,
+          "expected_savings_note": "May reduce ad valorem rate.",
+          "legal_rationale": "Coverage changes can alter outsole material.",
+          "risk_level": "med",
+          "constraints": ["Durability impact", "Must meet ASTM slip tests"],
+          "required_evidence": ["Material spec", "Lab test"]
+        },
+        {
+          "id": "m2",
+          "title": "Shift upper to predominantly rubber/plastic",
+          "category": "material",
+          "change": "Reinforce upper with molded TPU panels.",
+          "expected_effect": "Potential shift to rubber/plastic upper classification.",
+          "expected_hts_change": "6402.99",
+          "expected_duty_rate_pct": 5.0,
+          "expected_savings_note": "Lower duty if classified under 6402.99.",
+          "legal_rationale": "Upper material drives HTS heading.",
+          "risk_level": "high",
+          "constraints": ["Design change", "Comfort impact"],
+          "required_evidence": ["BOM", "Material breakdown"]
+        },
+        {
+          "id": "m3",
+          "title": "Add textile outer sole cover",
+          "category": "manufacturing",
+          "change": "Laminated textile layer over outsole.",
+          "expected_effect": "Possible reclassification under textile outsole notes.",
+          "expected_hts_change": "6404.19",
+          "expected_duty_rate_pct": 12.0,
+          "expected_savings_note": "Moderate savings if accepted.",
+          "legal_rationale": "Outer sole coverage can drive heading.",
+          "risk_level": "med",
+          "constraints": ["Wear resistance"],
+          "required_evidence": ["Production spec"]
+        },
+        {
+          "id": "m4",
+          "title": "Relocate final assembly to qualifying country",
+          "category": "origin",
+          "change": "Complete substantial transformation in FTA partner.",
+          "expected_effect": "Eligibility for preferential rate if rules met.",
+          "expected_hts_change": null,
+          "expected_duty_rate_pct": 8.0,
+          "expected_savings_note": "Lower rate via trade program.",
+          "legal_rationale": "Origin rules allow reduced duty when met.",
+          "risk_level": "high",
+          "constraints": ["Complex origin rules", "Documentation"],
+          "required_evidence": ["Process flow", "Certificates"]
+        },
+        {
+          "id": "m5",
+          "title": "Package as a set with accessories",
+          "category": "packaging",
+          "change": "Bundle with gaiters/insoles as a set.",
+          "expected_effect": "Potential set classification argument.",
+          "expected_hts_change": null,
+          "expected_duty_rate_pct": null,
+          "expected_savings_note": "Unknown; needs HTS research.",
+          "legal_rationale": "GRI 3(b) set analysis.",
+          "risk_level": "med",
+          "constraints": ["Must meet set criteria"],
+          "required_evidence": ["Packaging specs"]
+        }
+      ],
+      "best_option_id": "m2",
+      "optimized": {
+        "hts_code": "6402.99",
+        "duty_rate_pct": 5.0,
+        "estimated_savings_per_unit": 1.5,
+        "rationale": "Upper material shift lowers heading and ad valorem rate.",
+        "risk_flags": ["Material dominance must be proven"]
+      },
+      "questions_for_user": [],
+      "citations": []
+    }
+  ],
+  "critics": [
+    {
+      "unsupported": [],
+      "missing": [],
+      "conflicts": [],
+      "suggested_fixes": [],
+      "revised_questions_for_user": []
+    }
+  ]
+}
