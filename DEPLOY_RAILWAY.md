@@ -31,7 +31,7 @@ This repo is a monorepo with three Railway services:
   - `TRUSTAI_SERVICE=api`
   - `TRUSTAI_LLM_MODE=live`
   - `OPENAI_API_KEY=...` (or `OPEN_AI_KEY`)
-  - `ANTHROPIC_API_KEY=...` (or `CLAUD_AI_KEY`)
+  - `ANTHROPIC_API_KEY=...` (or `CLAUDE_AI_KEY`)
   - `TRUSTAI_ANTHROPIC_MODEL=...` (optional preferred Claude model)
   - `TRUSTAI_ANTHROPIC_MODEL_FALLBACKS=...` (optional comma-separated fallbacks)
   - `DATABASE_URL` (from Postgres plugin)
@@ -55,7 +55,7 @@ This repo is a monorepo with three Railway services:
   - `TRUSTAI_SERVICE=worker`
   - `TRUSTAI_LLM_MODE=live`
   - `OPENAI_API_KEY=...` (or `OPEN_AI_KEY`)
-  - `ANTHROPIC_API_KEY=...` (or `CLAUD_AI_KEY`)
+  - `ANTHROPIC_API_KEY=...` (or `CLAUDE_AI_KEY`)
   - `TRUSTAI_ANTHROPIC_MODEL=...` (optional preferred Claude model)
   - `TRUSTAI_ANTHROPIC_MODEL_FALLBACKS=...` (optional comma-separated fallbacks)
   - `DATABASE_URL`
@@ -110,7 +110,7 @@ Required env vars for API + worker:
 
 - `TRUSTAI_LLM_MODE=live`
 - `OPENAI_API_KEY=...` (or `OPEN_AI_KEY`)
-- `ANTHROPIC_API_KEY=...` (or `CLAUD_AI_KEY`)
+- `ANTHROPIC_API_KEY=...` (or `CLAUDE_AI_KEY`)
 - `TRUSTAI_ANTHROPIC_MODEL=...` (optional preferred Claude model)
 - `TRUSTAI_ANTHROPIC_MODEL_FALLBACKS=...` (optional comma-separated fallbacks)
 - `DATABASE_URL` (from Railway Postgres plugin)

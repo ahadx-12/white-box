@@ -34,7 +34,7 @@ def test_llm_mode_defaults_to_fixture(monkeypatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("OPEN_AI_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    monkeypatch.delenv("CLAUD_AI_KEY", raising=False)
+    monkeypatch.delenv("CLAUDE_AI_KEY", raising=False)
     get_settings.cache_clear()
     settings = get_settings()
     assert settings.llm_mode == "fixture"
@@ -45,7 +45,7 @@ def test_live_mode_requires_keys(monkeypatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("OPEN_AI_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    monkeypatch.delenv("CLAUD_AI_KEY", raising=False)
+    monkeypatch.delenv("CLAUDE_AI_KEY", raising=False)
     get_settings.cache_clear()
     try:
         get_settings()

@@ -28,6 +28,11 @@ def build_tariff_proposal_prompt(
         Requirements:
         - Output STRICT JSON that matches the provided schema. No extra keys.
         - Provide baseline classification + duty estimate + assumptions.
+        - Provide a GRI trace with steps 1→6 in order, each with applied yes/no, reasoning,
+          rejected_because, citations, and a 6-length step_vector. Do NOT skip steps.
+        - GRI 3 (incl. 3(b) essential character) can only be applied after rejecting GRI 1 & 2.
+        - Provide a composition_table (percent/cost/weight breakdown) and essential_character analysis
+          with basis, weights, conclusion, justification, and citations.
         - Generate at least 8 legal tariff engineering mutations if any plausible options exist.
         - Consider material substitutions, surface coverage changes (e.g., felt-sole),
           manufacturing steps/essential character, origin shifts (substantial transformation),
@@ -38,6 +43,10 @@ def build_tariff_proposal_prompt(
         - expected_effect must be one of: hts_change, duty_rate_change, unknown.
         - If reducing duty is not plausible, say so explicitly and explain why.
         - Include compliance constraints and risk flags for each mutation.
+        - Provide 1–3 lawful what-if candidates (max 5) with per-unit duty deltas and constraints.
+          Use compliance phrasing: lawful redesign, tariff engineering, documentation required.
+          Never suggest evasion. Include citations_required=true for each candidate.
+        - Provide compliance_notes that emphasize lawful redesign, documentation, and auditability.
         - Use numeric duty_rate_pct where possible; if unknown, set null and ask questions.
         - If you make specific factual claims (exact HTS/duty), include citations with short quotes
           (<=25 words) and reference evidence index. If no evidence supports the claim, mark it
@@ -67,6 +76,7 @@ def build_tariff_critic_prompt(
         f"""
         You are a compliance critic. Review the proposed tariff dossier for unsupported claims,
         missing key facts, internal contradictions, or illegal/implausible suggestions.
+        Specifically check GRI step sequencing and essential character basis (GRI 3(b)).
 
         Input:
         {input_text}
@@ -100,6 +110,9 @@ def build_tariff_revision_prompt(
         f"""
         Revise the tariff dossier to address the critique and mismatch report.
         Output STRICT JSON matching the schema.
+        Ensure GRI steps are sequenced 1→6 with an accurate step_vector and citations.
+        Fix essential character analysis and composition_table if flagged.
+        Provide lawful what-if candidates with quantified deltas and constraints.
 
         Input:
         {input_text}

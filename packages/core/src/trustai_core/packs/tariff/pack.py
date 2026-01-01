@@ -10,8 +10,19 @@ from pydantic import ValidationError
 
 from trustai_core.llm.base import LLMClient, LLMError
 from trustai_core.packs.registry import PackContext, register_pack
-from trustai_core.packs.tariff.hdc import HDCScore, bundle_tokens, compare_bundles
+from trustai_core.packs.tariff.hdc import (
+    HDCScore,
+    build_composition_vector,
+    bundle_tokens,
+    compare_bundles,
+    essential_character_score,
+    normalize_component_name,
+    tariff_mutex_sets,
+)
 from trustai_core.packs.tariff.models import (
+    GriStep,
+    GriTrace,
+    WhatIfCandidate,
     TariffCritique,
     TariffDossier,
     TariffVerificationResult,
@@ -27,6 +38,9 @@ from trustai_core.utils.hashing import sha256_canonical_json
 TARIFF_PACK_VERSION = "0.1"
 TARIFF_THRESHOLD_DEFAULT = 0.92
 TARIFF_MIN_MUTATIONS_DEFAULT = 8
+TARIFF_MAX_ITERS_CAP = 6
+MAX_WHAT_IF_CANDIDATES = 5
+ESSENTIAL_CHARACTER_MIN_SCORE = 0.58
 
 
 @dataclass
@@ -291,6 +305,7 @@ def _resolve_options(options: dict[str, object] | None) -> TariffOptions:
     if not options:
         return TariffOptions()
     max_iters = int(options.get("max_iters") or 4)
+    max_iters = min(max_iters, TARIFF_MAX_ITERS_CAP)
     threshold = float(options.get("threshold") or TARIFF_THRESHOLD_DEFAULT)
     min_mutations = int(options.get("min_mutations") or TARIFF_MIN_MUTATIONS_DEFAULT)
     evidence_value = options.get("evidence")
@@ -433,6 +448,7 @@ class GateResult:
     missing: list[str]
     unsupported: list[str]
     conflicts: list[str]
+    essential_character_score: float | None = None
 
 
 ALLOWED_CATEGORIES = {
@@ -457,9 +473,117 @@ ILLEGAL_EVASION_TERMS = {
     "false invoice",
     "fraud",
     "evade",
+    "evasion",
     "smuggle",
     "bribe",
 }
+
+GRI_ORDER = [
+    GriStep.GRI_1,
+    GriStep.GRI_2,
+    GriStep.GRI_3,
+    GriStep.GRI_4,
+    GriStep.GRI_5,
+    GriStep.GRI_6,
+]
+
+
+def validate_gri_sequence(gri_trace: GriTrace | None) -> tuple[bool, list[str]]:
+    if gri_trace is None:
+        return False, ["missing_gri_trace"]
+    violations: list[str] = []
+    if [step.step for step in gri_trace.steps] != GRI_ORDER:
+        violations.append("GRI steps must be ordered GRI_1 through GRI_6")
+    if gri_trace.step_vector and len(gri_trace.step_vector) != len(GRI_ORDER):
+        violations.append("Step vector must include 6 entries")
+    applied_indices = [i for i, step in enumerate(gri_trace.steps) if step.applied]
+    if applied_indices:
+        first_applied = applied_indices[0]
+        for idx in range(first_applied):
+            if gri_trace.steps[idx].applied:
+                violations.append(
+                    f"Sequence Violation: {gri_trace.steps[idx].step} applied before "
+                    f"{gri_trace.steps[first_applied].step}"
+                )
+            if not gri_trace.steps[idx].rejected_because:
+                violations.append(
+                    f"Sequence Violation: {gri_trace.steps[first_applied].step} used before "
+                    f"rejecting {gri_trace.steps[idx].step}"
+                )
+        for idx in range(first_applied + 1, len(gri_trace.steps)):
+            if gri_trace.steps[idx].applied:
+                violations.append(
+                    f"Sequence Violation: {gri_trace.steps[idx].step} applied after "
+                    f"{gri_trace.steps[first_applied].step}"
+                )
+    if gri_trace.step_vector:
+        applied_vector = [step.applied for step in gri_trace.steps]
+        if applied_vector != gri_trace.step_vector:
+            violations.append("Step vector does not match applied steps")
+    return (not violations), _cap_list(violations, 10)
+
+
+def generate_perturbations(
+    product_facts: dict[str, Any],
+    constraints: list[str] | None,
+) -> list[WhatIfCandidate]:
+    candidates: list[WhatIfCandidate] = []
+    composition = product_facts.get("composition_table") or []
+    baseline_duty = product_facts.get("baseline_duty_rate_pct")
+    constraints_list = constraints or []
+    if composition:
+        sorted_components = sorted(
+            composition,
+            key=lambda item: float(item.get("pct") or 0.0),
+            reverse=True,
+        )
+        if len(sorted_components) >= 2:
+            primary = sorted_components[0]
+            secondary = sorted_components[1]
+            primary_name = primary.get("name", "primary material")
+            secondary_name = secondary.get("name", "secondary material")
+            candidates.append(
+                WhatIfCandidate(
+                    mutation_id="whatif_material_flip",
+                    change=(
+                        f"Adjust composition so {secondary_name} reaches 51% "
+                        f"and {primary_name} drops below 49%."
+                    ),
+                    rationale="Threshold flip may shift essential character and heading notes.",
+                    expected_heading_shift="Potential shift to heading aligned with dominant material.",
+                    estimated_duty_delta=-0.02 if baseline_duty else None,
+                    legal_risks=[
+                        "Requires lawful redesign and documented BOM changes.",
+                        "May affect performance/compliance testing.",
+                    ],
+                    citations_required=True,
+                    constraints=constraints_list,
+                )
+            )
+    candidates.append(
+        WhatIfCandidate(
+            mutation_id="whatif_documentation_upgrade",
+            change="Add detailed production records and product testing to support lawful reclassification.",
+            rationale="Documentation can support a defensible classification argument.",
+            expected_heading_shift="No direct shift; strengthens classification support.",
+            estimated_duty_delta=None,
+            legal_risks=["Must remain truthful and auditable."],
+            citations_required=True,
+            constraints=constraints_list,
+        )
+    )
+    return candidates[:MAX_WHAT_IF_CANDIDATES]
+
+
+def _detect_mutex_conflicts(labels: list[str]) -> list[str]:
+    normalized = {normalize_component_name(label) for label in labels if label}
+    conflicts: list[str] = []
+    for group in tariff_mutex_sets():
+        group_set = {normalize_component_name(item) for item in group}
+        hits = sorted(group_set.intersection(normalized))
+        if len(hits) > 1:
+            conflicts.append(f"Mutually exclusive categories present: {', '.join(hits)}")
+    return conflicts
 
 
 def _evaluate_iteration(
@@ -473,10 +597,14 @@ def _evaluate_iteration(
 ) -> tuple[TariffVerifyIteration, list[int], str]:
     rejected_because: list[str] = []
     gate = _gate_dossier(dossier, min_mutations)
+    sequence_ok, sequence_violations = validate_gri_sequence(dossier.gri_trace)
     conflicts = sorted(set(critique.conflicts + gate.conflicts))
     unsupported = sorted(set(critique.unsupported + gate.unsupported))
     missing = sorted(set(critique.missing + gate.missing))
     rejected_because.extend(gate.rejected_because)
+    if not sequence_ok:
+        rejected_because.append("gri_sequence_violation")
+        conflicts.extend(sequence_violations)
 
     baseline_duty = dossier.baseline.duty_rate_pct
     optimized_duty = dossier.optimized.duty_rate_pct
@@ -508,8 +636,18 @@ def _evaluate_iteration(
     score = _score_iteration(rejected_because, hdc_score)
     accepted = score >= threshold and not rejected_because
 
-    mismatch_report = _build_mismatch_report(rejected_because, hdc)
-    feedback_text = _build_feedback_text(rejected_because, critique, mismatch_report)
+    mismatch_report = _build_mismatch_report(
+        rejected_because,
+        hdc,
+        sequence_violations,
+        gate.essential_character_score,
+    )
+    feedback_text = _build_feedback_text(
+        rejected_because,
+        critique,
+        mismatch_report,
+        _build_what_if_feedback(dossier, rejected_because),
+    )
     answer_delta_summary = _summarize_dossier_delta(previous_dossier, dossier)
     conflicts = _cap_list(conflicts, 50)
     unsupported = _cap_list(unsupported, 50)
@@ -529,6 +667,13 @@ def _evaluate_iteration(
         answer_delta_summary=answer_delta_summary,
         hdc_score=round(hdc_score, 6),
         mismatch_report=mismatch_report,
+        gri_trace=dossier.gri_trace,
+        sequence_violations=sequence_violations,
+        essential_character_score=(
+            round(gate.essential_character_score, 6)
+            if gate.essential_character_score is not None
+            else None
+        ),
     )
     return iteration, hdc_bundle, mismatch_report
 
@@ -538,6 +683,7 @@ def _gate_dossier(dossier: TariffDossier, min_mutations: int) -> GateResult:
     missing: list[str] = []
     unsupported: list[str] = []
     conflicts: list[str] = []
+    essential_score: float | None = None
 
     hts_code = (dossier.baseline.hts_code or "").strip()
     if not hts_code or hts_code.lower() == "unknown":
@@ -576,6 +722,9 @@ def _gate_dossier(dossier: TariffDossier, min_mutations: int) -> GateResult:
         if not mutation.rationale.strip():
             missing.append(f"mutation {mutation.id} rationale")
             rejected_because.append("mutation_missing_rationale")
+        if not mutation.legal_rationale.strip():
+            missing.append(f"mutation {mutation.id} legal_rationale")
+            rejected_because.append("mutation_missing_legal_rationale")
         if _contains_illegal_terms(_mutation_text(mutation)):
             conflicts.append(f"mutation {mutation.id} contains illegal evasion suggestion")
             rejected_because.append("illegal_evasion_suggestion")
@@ -606,11 +755,57 @@ def _gate_dossier(dossier: TariffDossier, min_mutations: int) -> GateResult:
             missing.append("baseline rationale for high-confidence duty rate")
             rejected_because.append("high_confidence_missing_rationale")
 
+    composition_payload = [item.model_dump() for item in dossier.composition_table]
+    composition_vector = build_composition_vector(composition_payload)
+    claim_components = [
+        {"name": name, "pct": weight} for name, weight in dossier.essential_character.weights.items()
+    ]
+    claim_vector = build_composition_vector(claim_components)
+    essential_score = essential_character_score(claim_vector, composition_vector)
+    if essential_score < ESSENTIAL_CHARACTER_MIN_SCORE:
+        conflicts.append(
+            f"Essential Character Mismatch (score {essential_score:.2f} below threshold)"
+        )
+        rejected_because.append("essential_character_mismatch")
+
+    mutex_conflicts = _detect_mutex_conflicts(
+        [component.name for component in dossier.composition_table]
+        + list(dossier.essential_character.weights.keys())
+    )
+    if mutex_conflicts:
+        conflicts.extend(mutex_conflicts)
+        rejected_because.append("ontology_mutex_conflict")
+
+    if not dossier.compliance_notes:
+        missing.append("compliance_notes")
+        rejected_because.append("compliance_notes_missing")
+
+    if dossier.what_if_candidates:
+        if len(dossier.what_if_candidates) > MAX_WHAT_IF_CANDIDATES:
+            missing.append(f"what_if_candidates (max {MAX_WHAT_IF_CANDIDATES})")
+            rejected_because.append("too_many_what_if_candidates")
+        for candidate in dossier.what_if_candidates:
+            if not candidate.citations_required:
+                missing.append(f"what_if {candidate.mutation_id} citations_required")
+                rejected_because.append("what_if_citations_required")
+            if _contains_illegal_terms(
+                " ".join([candidate.change, candidate.rationale, " ".join(candidate.legal_risks)])
+            ):
+                conflicts.append(
+                    f"what_if {candidate.mutation_id} contains illegal evasion suggestion"
+                )
+                rejected_because.append("illegal_evasion_suggestion")
+    else:
+        if dossier.baseline.duty_rate_pct and dossier.baseline.duty_rate_pct > 0:
+            missing.append("what_if_candidates")
+            rejected_because.append("missing_what_if_candidates")
+
     return GateResult(
         rejected_because=sorted(set(rejected_because)),
         missing=sorted(set(missing)),
         unsupported=sorted(set(unsupported)),
         conflicts=sorted(set(conflicts)),
+        essential_character_score=essential_score,
     )
 
 
@@ -668,11 +863,16 @@ def _hdc_tokens(dossier: TariffDossier) -> list[str]:
         f"optimized.hts={dossier.optimized.hts_code}",
         f"optimized.duty={dossier.optimized.duty_rate_pct}",
         f"best_option={dossier.best_option_id}",
+        f"gri.final={dossier.gri_trace.final_step_used}",
     ]
     for assumption in dossier.assumptions:
         tokens.append(f"assumption={assumption}")
     for mutation in dossier.mutations:
         tokens.append(f"mutation={mutation.id}:{mutation.category}")
+    for component in dossier.composition_table:
+        tokens.append(f"component={component.name}:{component.pct or component.cost_pct or 0.0}")
+    for candidate in dossier.what_if_candidates:
+        tokens.append(f"whatif={candidate.mutation_id}")
     return sorted(tokens)
 
 
@@ -684,11 +884,23 @@ def _score_iteration(rejected_because: list[str], hdc_score: float) -> float:
     return min(score, hdc_score)
 
 
-def _build_mismatch_report(rejected_because: list[str], hdc: HDCScore) -> str:
+def _build_mismatch_report(
+    rejected_because: list[str],
+    hdc: HDCScore,
+    sequence_violations: list[str] | None = None,
+    essential_score: float | None = None,
+) -> str:
     reasons = ", ".join(rejected_because) if rejected_because else "none"
+    sequence_note = ""
+    if sequence_violations:
+        sequence_note = f" GRI violations: {'; '.join(sequence_violations)}."
+    essential_note = ""
+    if essential_score is not None:
+        essential_note = f" Essential character score={essential_score:.4f}."
     return (
         f"Rejected because: {reasons}. "
         f"HDC similarity={hdc.similarity:.4f}, drift={hdc.drift:.4f}."
+        f"{essential_note}{sequence_note}"
     )
 
 
@@ -696,6 +908,7 @@ def _build_feedback_text(
     rejected_because: list[str],
     critique: TariffCritique,
     mismatch_report: str,
+    what_if_feedback: str | None = None,
 ) -> str:
     parts = [mismatch_report]
     if critique.missing:
@@ -706,9 +919,29 @@ def _build_feedback_text(
         parts.append("Conflicts: " + "; ".join(critique.conflicts))
     if critique.suggested_fixes:
         parts.append("Suggested fixes: " + "; ".join(critique.suggested_fixes))
+    if what_if_feedback:
+        parts.append(what_if_feedback)
     if rejected_because:
         parts.append("Rejected: " + ", ".join(rejected_because))
     return "\n".join(parts)
+
+
+def _build_what_if_feedback(dossier: TariffDossier, rejected_because: list[str]) -> str | None:
+    if "missing_what_if_candidates" not in rejected_because:
+        return None
+    suggestions = generate_perturbations(
+        {
+            "composition_table": [item.model_dump() for item in dossier.composition_table],
+            "baseline_duty_rate_pct": dossier.baseline.duty_rate_pct,
+        },
+        dossier.compliance_notes,
+    )
+    if not suggestions:
+        return None
+    lines = ["Provide what-if candidates; example levers:"]
+    for candidate in suggestions:
+        lines.append(f"- {candidate.mutation_id}: {candidate.change}")
+    return "\n".join(lines)
 
 
 def _summarize_dossier_delta(

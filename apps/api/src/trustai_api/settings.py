@@ -31,7 +31,7 @@ def _resolve_openai_key() -> str | None:
 
 
 def _resolve_anthropic_key() -> str | None:
-    return os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUD_AI_KEY")
+    return os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_AI_KEY")
 
 
 def _validate_live_keys(llm_mode: str) -> None:
@@ -40,7 +40,7 @@ def _validate_live_keys(llm_mode: str) -> None:
     if not (_resolve_openai_key() or _resolve_anthropic_key()):
         raise ValueError(
             "TRUSTAI_LLM_MODE=live requires OPENAI_API_KEY, OPEN_AI_KEY, "
-            "ANTHROPIC_API_KEY, or CLAUD_AI_KEY"
+            "ANTHROPIC_API_KEY, or CLAUDE_AI_KEY"
         )
 
 

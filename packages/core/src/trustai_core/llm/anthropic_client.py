@@ -75,7 +75,7 @@ class AnthropicClient(LLMClient):
         timeout_s: float = 30.0,
         retry_policy: RetryPolicy | None = None,
     ) -> None:
-        resolved_key = api_key or os.getenv("CLAUD_AI_KEY") or os.getenv("ANTHROPIC_API_KEY")
+        resolved_key = api_key or os.getenv("CLAUDE_AI_KEY") or os.getenv("ANTHROPIC_API_KEY")
         if not resolved_key:
             raise LLMError("Anthropic API key is missing")
         self._client = AsyncAnthropic(api_key=resolved_key, timeout=timeout_s)

@@ -32,6 +32,29 @@ def _sanitize_payload(payload: Any) -> Any:
     return payload
 
 
+def _cap_list(items: list[Any], limit: int) -> list[Any]:
+    return items[:limit]
+
+
+def _normalize_tariff_dossier(dossier: dict[str, Any] | None) -> dict[str, Any] | None:
+    if dossier is None:
+        return None
+    normalized = _sanitize_payload(dossier)
+    if not isinstance(normalized, dict):
+        return None
+    if isinstance(normalized.get("mutations"), list):
+        normalized["mutations"] = _cap_list(normalized["mutations"], 10)
+    if isinstance(normalized.get("what_if_candidates"), list):
+        normalized["what_if_candidates"] = _cap_list(normalized["what_if_candidates"], 5)
+    if isinstance(normalized.get("gri_trace"), dict):
+        trace = normalized["gri_trace"]
+        if isinstance(trace.get("steps"), list):
+            trace["steps"] = _cap_list(trace["steps"], 6)
+        if isinstance(trace.get("violations"), list):
+            trace["violations"] = _cap_list(trace["violations"], 10)
+    return normalized
+
+
 def _resolve_output_path(out_arg: str | None) -> Path:
     if not out_arg:
         return DEFAULT_OUT
@@ -46,7 +69,7 @@ def _resolve_output_path(out_arg: str | None) -> Path:
 
 def _extract_fixture(response_payload: dict[str, Any]) -> dict[str, Any]:
     proof = response_payload.get("proof") or {}
-    dossier = proof.get("tariff_dossier")
+    dossier = _normalize_tariff_dossier(proof.get("tariff_dossier"))
     critics = proof.get("critic_outputs") or []
     proposals = [dossier] if dossier else []
     return {"proposals": proposals, "critics": critics}

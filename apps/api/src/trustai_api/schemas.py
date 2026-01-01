@@ -32,6 +32,9 @@ class IterationTraceResponse(BaseModel):
     answer_delta_summary: str
     hdc_score: float | None = None
     mismatch_report: str | None = None
+    gri_trace: dict[str, Any] | None = None
+    sequence_violations: list[str] | None = None
+    essential_character_score: float | None = None
 
 
 class ExplainSummaryResponse(BaseModel):
