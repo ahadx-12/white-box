@@ -167,6 +167,9 @@ def _normalize_tariff_result(
                 "answer_delta_summary": iteration.answer_delta_summary,
                 "hdc_score": iteration.hdc_score,
                 "mismatch_report": iteration.mismatch_report,
+                "gri_trace": iteration.gri_trace.model_dump() if iteration.gri_trace else None,
+                "sequence_violations": iteration.sequence_violations,
+                "essential_character_score": iteration.essential_character_score,
             }
         )
         similarity_history.append(round(iteration.score, 6))

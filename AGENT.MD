@@ -60,7 +60,7 @@ When implementing a task, you must:
 ---
 
 ## Safety and secrets
-- Never print environment secrets (OPEN_AI_KEY, CLAUD_AI_KEY).
+- Never print environment secrets (OPEN_AI_KEY, CLAUDE_AI_KEY).
 - Don’t hardcode keys anywhere.
 - Don’t add network calls to unit tests.
 
@@ -73,4 +73,3 @@ A task is done only when:
 - code is clean and modular,
 - outputs are deterministic/replayable,
 - no secrets are exposed.
-

@@ -36,13 +36,13 @@ def _env_has_openai_key() -> bool:
 
 
 def _env_has_anthropic_key() -> bool:
-    return bool(os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUD_AI_KEY"))
+    return bool(os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_AI_KEY"))
 
 
 def _require_live_keys() -> list[str]:
     if _env_has_openai_key() or _env_has_anthropic_key():
         return []
-    return ["OPENAI_API_KEY/OPEN_AI_KEY or ANTHROPIC_API_KEY/CLAUD_AI_KEY"]
+    return ["OPENAI_API_KEY/OPEN_AI_KEY or ANTHROPIC_API_KEY/CLAUDE_AI_KEY"]
 
 
 def _parse_json_response(response: httpx.Response) -> dict[str, Any] | None:

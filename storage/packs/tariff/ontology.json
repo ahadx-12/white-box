@@ -1,5 +1,37 @@
 {
   "opposites": [],
-  "mutex_sets": [],
-  "aliases": {}
+  "mutex_sets": [
+    ["textile", "leather"],
+    ["electronics", "jewelry"]
+  ],
+  "aliases": {
+    "watch": "timekeeping_device",
+    "smartwatch": "timekeeping_device",
+    "phone": "transmission_apparatus",
+    "mobile phone": "transmission_apparatus",
+    "cellphone": "transmission_apparatus"
+  },
+  "material_axes": [
+    "textile",
+    "rubber",
+    "plastic",
+    "metal",
+    "ceramic",
+    "glass",
+    "paper",
+    "wood",
+    "leather",
+    "electronics",
+    "jewelry",
+    "timekeeping_device",
+    "transmission_apparatus"
+  ],
+  "component_axes": [
+    "upper",
+    "outsole",
+    "housing",
+    "strap",
+    "battery",
+    "display"
+  ]
 }

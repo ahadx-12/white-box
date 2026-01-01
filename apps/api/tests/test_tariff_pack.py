@@ -113,13 +113,9 @@ def test_tariff_pack_async_job(client, app, monkeypatch):
 @pytest.mark.live
 @pytest.mark.skipif(
     os.getenv("TRUSTAI_LLM_MODE") != "live"
-    or not (
-        os.getenv("OPENAI_API_KEY")
-        or os.getenv("OPEN_AI_KEY")
-        or os.getenv("ANTHROPIC_API_KEY")
-        or os.getenv("CLAUD_AI_KEY")
-    ),
-    reason="Live tariff test requires TRUSTAI_LLM_MODE=live and API keys",
+    or not (os.getenv("OPENAI_API_KEY") or os.getenv("OPEN_AI_KEY"))
+    or not (os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_AI_KEY")),
+    reason="Live tariff test requires TRUSTAI_LLM_MODE=live and both API keys",
 )
 def test_tariff_pack_live_smoke(client):
     response = client.post(

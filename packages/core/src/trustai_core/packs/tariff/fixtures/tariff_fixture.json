@@ -1,7 +1,15 @@
 {
+  "critics": [
+    {
+      "conflicts": [],
+      "missing": [],
+      "revised_questions_for_user": [],
+      "suggested_fixes": [],
+      "unsupported": []
+    }
+  ],
   "proposals": [
     {
-      "product_summary": "Athletic sneaker with textile upper and rubber outsole.",
       "assumptions": [
         "Classification based on textile upper and rubber outsole.",
         "No preferential trade program claimed.",
@@ -9,159 +17,322 @@
         "No waterproofing."
       ],
       "baseline": {
-        "hts_code": "6404.11.90",
-        "duty_rate_pct": 20.0,
+        "confidence": 0.6,
         "duty_basis": "ad valorem",
-        "rationale": "Footwear with textile upper, rubber/plastics outsole, athletic use.",
-        "confidence": 0.6
+        "duty_rate_pct": 20.0,
+        "hts_code": "6404.11.90",
+        "rationale": "Footwear with textile upper, rubber/plastics outsole, athletic use."
+      },
+      "best_option_id": "m2",
+      "chosen_mutation": "m2",
+      "citations": [
+        {
+          "claim": "Baseline HTS aligned with textile-upper footwear.",
+          "evidence_index": 0,
+          "quote": "textile upper with rubber outsole"
+        }
+      ],
+      "compliance_notes": [
+        "All recommendations are lawful tariff engineering with documented redesign.",
+        "Maintain auditable records for any classification change."
+      ],
+      "composition_table": [
+        {
+          "name": "textile upper",
+          "pct": 60.0
+        },
+        {
+          "name": "rubber outsole",
+          "pct": 40.0
+        }
+      ],
+      "essential_character": {
+        "basis": "value",
+        "citations": [],
+        "conclusion": "Textile upper imparts essential character under GRI 3(b).",
+        "justification": "Upper material dominates value and surface area.",
+        "weights": {
+          "rubber": 40.0,
+          "textile": 60.0
+        }
+      },
+      "gri_trace": {
+        "final_step_used": "GRI_3",
+        "sequence_ok": true,
+        "step_vector": [
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        "steps": [
+          {
+            "applied": false,
+            "citations": [],
+            "reasoning": "Heading text alone does not resolve classification; multiple headings remain plausible.",
+            "rejected_because": [
+              "Multiple headings plausible"
+            ],
+            "step": "GRI_1"
+          },
+          {
+            "applied": false,
+            "citations": [],
+            "reasoning": "Incomplete or unassembled goods rule not applicable.",
+            "rejected_because": [
+              "Not incomplete or unfinished"
+            ],
+            "step": "GRI_2"
+          },
+          {
+            "applied": true,
+            "citations": [],
+            "reasoning": "Mixture/set classification requires essential character analysis under 3(b).",
+            "rejected_because": [],
+            "step": "GRI_3"
+          },
+          {
+            "applied": false,
+            "citations": [],
+            "reasoning": "Earlier step resolved classification.",
+            "rejected_because": [
+              "GRI_3 applied"
+            ],
+            "step": "GRI_4"
+          },
+          {
+            "applied": false,
+            "citations": [],
+            "reasoning": "Packaging rule not needed after GRI_3.",
+            "rejected_because": [
+              "GRI_3 applied"
+            ],
+            "step": "GRI_5"
+          },
+          {
+            "applied": false,
+            "citations": [],
+            "reasoning": "Subheading selection not required after GRI_3 resolved heading.",
+            "rejected_because": [
+              "GRI_3 applied"
+            ],
+            "step": "GRI_6"
+          }
+        ],
+        "violations": []
       },
       "mutations": [
         {
-          "id": "m1",
-          "title": "Add felt/fabric outer sole coverage",
           "category": "materials",
           "change": "Increase felt coverage to qualify for felt-sole notes.",
+          "constraints": [
+            "Durability impact",
+            "Must meet ASTM slip tests"
+          ],
+          "expected_duty_rate_pct": 10.0,
           "expected_effect": "hts_change",
           "expected_hts_change": "6404.19",
-          "expected_duty_rate_pct": 10.0,
           "expected_savings_note": "May reduce ad valorem rate.",
-          "rationale": "Outsole material coverage can shift HTS notes.",
+          "id": "m1",
           "legal_rationale": "Coverage changes can alter outsole material classification.",
+          "rationale": "Outsole material coverage can shift HTS notes.",
+          "required_evidence": [
+            "Material spec",
+            "Lab test"
+          ],
           "risk_level": "med",
-          "constraints": ["Durability impact", "Must meet ASTM slip tests"],
-          "required_evidence": ["Material spec", "Lab test"]
+          "title": "Add felt/fabric outer sole coverage"
         },
         {
-          "id": "m2",
-          "title": "Shift upper to predominantly rubber/plastic",
           "category": "materials",
           "change": "Reinforce upper with molded TPU panels to dominate external surface area.",
+          "constraints": [
+            "Design change",
+            "Comfort impact"
+          ],
+          "expected_duty_rate_pct": 5.0,
           "expected_effect": "hts_change",
           "expected_hts_change": "6402.99",
-          "expected_duty_rate_pct": 5.0,
           "expected_savings_note": "Lower duty if classified under 6402.99.",
-          "rationale": "Upper material drives heading for footwear.",
+          "id": "m2",
           "legal_rationale": "Upper material drives HTS heading selection.",
+          "rationale": "Upper material drives heading for footwear.",
+          "required_evidence": [
+            "BOM",
+            "Material breakdown"
+          ],
           "risk_level": "high",
-          "constraints": ["Design change", "Comfort impact"],
-          "required_evidence": ["BOM", "Material breakdown"]
+          "title": "Shift upper to predominantly rubber/plastic"
         },
         {
-          "id": "m3",
-          "title": "Change outsole construction",
           "category": "construction",
           "change": "Use a molded EVA midsole with thin rubber overlay.",
+          "constraints": [
+            "Wear resistance"
+          ],
+          "expected_duty_rate_pct": 12.0,
           "expected_effect": "unknown",
           "expected_hts_change": "6404.19",
-          "expected_duty_rate_pct": 12.0,
           "expected_savings_note": "Moderate savings if accepted.",
-          "rationale": "Construction can affect essential character analysis.",
+          "id": "m3",
           "legal_rationale": "Outer sole construction can drive heading under footwear notes.",
+          "rationale": "Construction can affect essential character analysis.",
+          "required_evidence": [
+            "Production spec",
+            "Material layering diagram"
+          ],
           "risk_level": "med",
-          "constraints": ["Wear resistance"],
-          "required_evidence": ["Production spec", "Material layering diagram"]
+          "title": "Change outsole construction"
         },
         {
-          "id": "m4",
-          "title": "Adjust component dominance",
           "category": "component",
           "change": "Increase value share of rubber/plastic overlay components.",
+          "constraints": [
+            "Cost impact"
+          ],
+          "expected_duty_rate_pct": null,
           "expected_effect": "unknown",
           "expected_hts_change": null,
-          "expected_duty_rate_pct": null,
           "expected_savings_note": "Unknown; depends on essential character analysis.",
-          "rationale": "Component dominance can influence essential character.",
+          "id": "m4",
           "legal_rationale": "GRI essential character depends on component value/role.",
+          "rationale": "Component dominance can influence essential character.",
+          "required_evidence": [
+            "Costed BOM",
+            "Value breakdown"
+          ],
           "risk_level": "med",
-          "constraints": ["Cost impact"],
-          "required_evidence": ["Costed BOM", "Value breakdown"]
+          "title": "Adjust component dominance"
         },
         {
-          "id": "m5",
-          "title": "Move assembly to an FTA partner",
           "category": "origin",
           "change": "Complete substantial transformation in an FTA partner country.",
+          "constraints": [
+            "Complex origin rules",
+            "Documentation"
+          ],
+          "expected_duty_rate_pct": 8.0,
           "expected_effect": "duty_rate_change",
           "expected_hts_change": null,
-          "expected_duty_rate_pct": 8.0,
           "expected_savings_note": "Lower rate via trade program if rules are met.",
-          "rationale": "Origin rules allow reduced duty when substantial transformation occurs.",
+          "id": "m5",
           "legal_rationale": "FTA rules of origin require substantial transformation evidence.",
+          "rationale": "Origin rules allow reduced duty when substantial transformation occurs.",
+          "required_evidence": [
+            "Process flow",
+            "Certificates"
+          ],
           "risk_level": "high",
-          "constraints": ["Complex origin rules", "Documentation"],
-          "required_evidence": ["Process flow", "Certificates"]
+          "title": "Move assembly to an FTA partner"
         },
         {
-          "id": "m6",
-          "title": "Package as a set with accessories",
           "category": "packaging",
           "change": "Bundle with gaiters/insoles as a set for GRI 3(b) analysis.",
+          "constraints": [
+            "Must meet set criteria"
+          ],
+          "expected_duty_rate_pct": null,
           "expected_effect": "unknown",
           "expected_hts_change": null,
-          "expected_duty_rate_pct": null,
           "expected_savings_note": "Unknown; needs HTS research.",
-          "rationale": "Set classification can change heading if criteria met.",
+          "id": "m6",
           "legal_rationale": "GRI 3(b) set analysis.",
+          "rationale": "Set classification can change heading if criteria met.",
+          "required_evidence": [
+            "Packaging specs"
+          ],
           "risk_level": "med",
-          "constraints": ["Must meet set criteria"],
-          "required_evidence": ["Packaging specs"]
+          "title": "Package as a set with accessories"
         },
         {
-          "id": "m7",
-          "title": "Limit intended use to athletic training",
           "category": "use",
           "change": "Document end-use as athletic training footwear.",
+          "constraints": [
+            "Marketing alignment"
+          ],
+          "expected_duty_rate_pct": null,
           "expected_effect": "unknown",
           "expected_hts_change": null,
-          "expected_duty_rate_pct": null,
           "expected_savings_note": "May affect subheading if use-based notes apply.",
-          "rationale": "Use notes can narrow classification arguments.",
+          "id": "m7",
           "legal_rationale": "Use-based subheading notes require documentation.",
+          "rationale": "Use notes can narrow classification arguments.",
+          "required_evidence": [
+            "Product literature",
+            "Labeling"
+          ],
           "risk_level": "low",
-          "constraints": ["Marketing alignment"],
-          "required_evidence": ["Product literature", "Labeling"]
+          "title": "Limit intended use to athletic training"
         },
         {
-          "id": "m8",
-          "title": "Strengthen classification argument",
           "category": "classification_argument",
           "change": "Prepare binding ruling request with classification argument.",
+          "constraints": [
+            "Lead time"
+          ],
+          "expected_duty_rate_pct": null,
           "expected_effect": "unknown",
           "expected_hts_change": null,
-          "expected_duty_rate_pct": null,
           "expected_savings_note": "No direct savings; reduces uncertainty.",
-          "rationale": "Strong documentation can reduce classification disputes.",
+          "id": "m8",
           "legal_rationale": "Binding ruling provides legal certainty.",
+          "rationale": "Strong documentation can reduce classification disputes.",
+          "required_evidence": [
+            "Ruling request draft"
+          ],
           "risk_level": "low",
-          "constraints": ["Lead time"],
-          "required_evidence": ["Ruling request draft"]
+          "title": "Strengthen classification argument"
         }
       ],
-      "best_option_id": "m2",
       "optimized": {
-        "hts_code": "6402.99",
         "duty_rate_pct": 5.0,
         "estimated_savings_per_unit": 1.5,
+        "hts_code": "6402.99",
         "rationale": "Upper material shift lowers heading and ad valorem rate.",
-        "risk_flags": ["Material dominance must be proven"]
+        "risk_flags": [
+          "Material dominance must be proven"
+        ]
       },
+      "product_summary": "Athletic sneaker with textile upper and rubber outsole.",
       "questions_for_user": [],
-      "citations": [
+      "savings_estimate": {
+        "annualized": null,
+        "formula": "per_unit_savings * annual_units",
+        "per_unit": 0.45
+      },
+      "what_if_candidates": [
         {
-          "evidence_index": 0,
-          "quote": "textile upper with rubber outsole",
-          "claim": "Baseline HTS aligned with textile-upper footwear."
+          "change": "Shift upper composition to 51% rubber/plastic to change essential character.",
+          "citations_required": true,
+          "constraints": [
+            "Maintain performance specs",
+            "Document BOM changes"
+          ],
+          "estimated_duty_delta": -0.05,
+          "expected_heading_shift": "Move toward rubber/plastics footwear headings.",
+          "legal_risks": [
+            "Requires lawful redesign and updated documentation."
+          ],
+          "mutation_id": "whatif_material_flip",
+          "rationale": "Material threshold flip may move the heading to rubber/plastics footwear."
+        },
+        {
+          "change": "Increase felt outsole coverage beyond note thresholds.",
+          "citations_required": true,
+          "constraints": [
+            "Material compliance testing"
+          ],
+          "estimated_duty_delta": -0.02,
+          "expected_heading_shift": "Potential shift within footwear subheadings.",
+          "legal_risks": [
+            "Must pass durability tests"
+          ],
+          "mutation_id": "whatif_outsole_threshold",
+          "rationale": "Outsole coverage can influence applicable duty notes."
         }
       ]
-    }
-  ],
-  "critics": [
-    {
-      "unsupported": [],
-      "missing": [],
-      "conflicts": [],
-      "suggested_fixes": [],
-      "revised_questions_for_user": []
     }
   ]
 }

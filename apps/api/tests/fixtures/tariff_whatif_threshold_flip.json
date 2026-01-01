@@ -304,33 +304,19 @@
       },
       "what_if_candidates": [
         {
-          "change": "Shift upper composition to 51% rubber/plastic to change essential character.",
+          "change": "Adjust textile/rubber composition to 49%/51% to shift dominant material.",
           "citations_required": true,
           "constraints": [
-            "Maintain performance specs",
-            "Document BOM changes"
+            "Maintain performance compliance",
+            "Document material sourcing"
           ],
-          "estimated_duty_delta": -0.05,
-          "expected_heading_shift": "Move toward rubber/plastics footwear headings.",
+          "estimated_duty_delta": -0.04,
+          "expected_heading_shift": "Shift toward rubber/plastics footwear headings.",
           "legal_risks": [
-            "Requires lawful redesign and updated documentation."
+            "Requires lawful redesign and updated BOM documentation."
           ],
-          "mutation_id": "whatif_material_flip",
-          "rationale": "Material threshold flip may move the heading to rubber/plastics footwear."
-        },
-        {
-          "change": "Increase felt outsole coverage beyond note thresholds.",
-          "citations_required": true,
-          "constraints": [
-            "Material compliance testing"
-          ],
-          "estimated_duty_delta": -0.02,
-          "expected_heading_shift": "Potential shift within footwear subheadings.",
-          "legal_risks": [
-            "Must pass durability tests"
-          ],
-          "mutation_id": "whatif_outsole_threshold",
-          "rationale": "Outsole coverage can influence applicable duty notes."
+          "mutation_id": "whatif_material_49_51",
+          "rationale": "Threshold flip can change essential character and heading notes."
         }
       ]
     }
