@@ -62,8 +62,9 @@ class FakeVerifier:
         input_text: str,
         pack: str,
         options: Any = None,
+        evidence: Any = None,
     ) -> VerificationResult:
-        self.calls.append((input_text, pack, options))
+        self.calls.append((input_text, pack, options, evidence))
         return self._result
 
     def debug_info(self) -> dict[str, object]:
@@ -76,6 +77,7 @@ class ErrorVerifier:
         input_text: str,
         pack: str,
         options: Any = None,
+        evidence: Any = None,
     ) -> VerificationResult:
         raise LLMError("model not found")
 

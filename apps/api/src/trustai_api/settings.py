@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+from trustai_core.config import get_llm_mode
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -35,10 +37,11 @@ def _resolve_anthropic_key() -> str | None:
 def _validate_live_keys(llm_mode: str) -> None:
     if llm_mode != "live":
         return
-    if not _resolve_openai_key():
-        raise ValueError("TRUSTAI_LLM_MODE=live requires OPENAI_API_KEY or OPEN_AI_KEY")
-    if not _resolve_anthropic_key():
-        raise ValueError("TRUSTAI_LLM_MODE=live requires ANTHROPIC_API_KEY or CLAUD_AI_KEY")
+    if not (_resolve_openai_key() or _resolve_anthropic_key()):
+        raise ValueError(
+            "TRUSTAI_LLM_MODE=live requires OPENAI_API_KEY, OPEN_AI_KEY, "
+            "ANTHROPIC_API_KEY, or CLAUD_AI_KEY"
+        )
 
 
 @lru_cache
@@ -60,9 +63,7 @@ def get_settings() -> Settings:
     if auto_create_tables_env is None:
         auto_create_tables_env = os.getenv("TRUSTAI_AUTO_CREATE_TABLES", "1")
     auto_create_tables = auto_create_tables_env == "1"
-    llm_mode = os.getenv("TRUSTAI_LLM_MODE", "mock").lower()
-    if llm_mode not in {"mock", "live"}:
-        raise ValueError("TRUSTAI_LLM_MODE must be 'mock' or 'live'")
+    llm_mode = get_llm_mode()
     _validate_live_keys(llm_mode)
     debug_default = os.getenv("TRUSTAI_DEBUG_DEFAULT", "0") == "1"
     return Settings(

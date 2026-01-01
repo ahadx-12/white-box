@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import os
 
+import pytest
 from trustai_api.services.job_store import JobStore
 
 
 def _enable_tariff_fixture(monkeypatch) -> None:
-    monkeypatch.setenv("FAKE_LLM", "1")
+    monkeypatch.setenv("TRUSTAI_LLM_MODE", "fixture")
     monkeypatch.setenv(
         "TRUSTAI_TARIFF_FIXTURE",
         os.path.abspath("apps/api/tests/fixtures/tariff_fixture.json"),
@@ -32,7 +33,7 @@ def test_tariff_pack_sync_smoke(client, app, monkeypatch):
     assert proof_response.status_code == 200
     proof_payload = proof_response.json()
     mutations = proof_payload["payload"]["proof"]["tariff_dossier"]["mutations"]
-    assert len(mutations) >= 5
+    assert len(mutations) >= 8
 
 
 def test_tariff_pack_reduces_or_explains(client, monkeypatch):
@@ -50,6 +51,25 @@ def test_tariff_pack_reduces_or_explains(client, monkeypatch):
         assert optimized <= baseline
     else:
         assert dossier["questions_for_user"]
+
+
+def test_tariff_pack_evidence_citations(client, monkeypatch):
+    _enable_tariff_fixture(monkeypatch)
+    response = client.post(
+        "/v1/verify",
+        json={
+            "input": "Classify a textile sneaker with rubber outsole.",
+            "evidence": [
+                "Lab report: textile upper dominates surface area; rubber outsole.",
+                "Invoice: standard import, no preferential program.",
+            ],
+        },
+        headers={"X-TrustAI-Pack": "tariff"},
+    )
+    payload = response.json()
+    dossier = payload["proof"]["tariff_dossier"]
+    assert dossier["citations"]
+    assert all("evidence_index" in item for item in dossier["citations"])
 
 
 def test_tariff_pack_async_job(client, app, monkeypatch):
@@ -82,4 +102,31 @@ def test_tariff_pack_async_job(client, app, monkeypatch):
     assert job_response.status_code == 200
     payload = job_response.json()
     assert payload["status"] == "done"
-    assert payload["result"]["proof_id"] == proof_id
+    proof_id = payload["proof_id"]
+    assert proof_id
+
+    proof_response = client.get(f"/v1/proofs/{proof_id}")
+    assert proof_response.status_code == 200
+    assert proof_response.json()["payload"]["proof"]["tariff_dossier"]
+
+
+@pytest.mark.live
+@pytest.mark.skipif(
+    os.getenv("TRUSTAI_LLM_MODE") != "live"
+    or not (
+        os.getenv("OPENAI_API_KEY")
+        or os.getenv("OPEN_AI_KEY")
+        or os.getenv("ANTHROPIC_API_KEY")
+        or os.getenv("CLAUD_AI_KEY")
+    ),
+    reason="Live tariff test requires TRUSTAI_LLM_MODE=live and API keys",
+)
+def test_tariff_pack_live_smoke(client):
+    response = client.post(
+        "/v1/verify",
+        json={"input": "Classify a ceramic coffee mug."},
+        headers={"X-TrustAI-Pack": "tariff"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] in {"verified", "failed"}

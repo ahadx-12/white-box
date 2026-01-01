@@ -25,9 +25,27 @@ curl -sSf https://<api>/v1/verify \
   "pack": "tariff",
   "options": {
     "max_iters": 4,
-    "threshold": 0.92
+    "threshold": 0.92,
+    "min_mutations": 8
   }
 }
+```
+
+## Live mode
+Fixture mode is the default. To run live LLM calls, set:
+```bash
+export TRUSTAI_LLM_MODE=live
+export OPENAI_API_KEY=...
+export ANTHROPIC_API_KEY=...
+```
+
+## Recording a new fixture
+Run the API locally and record a live response:
+```bash
+TRUSTAI_LLM_MODE=live \\
+python scripts/record_tariff_fixture.py \\
+  --prompt "Classify a textile sneaker with rubber outsole." \\
+  --out apps/api/tests/fixtures/tariff_fixture.json
 ```
 
 ## Response highlights
@@ -36,6 +54,7 @@ The response stays backward compatible, with additional tariff details in the `p
 - `iterations[].hdc_score` / `iterations[].mismatch_report`: deterministic verifier signals.
 - `proof.critic_outputs`: critic findings per iteration.
 - `proof.model_routing`: provider/model routing.
+ - `proof.tariff_dossier.citations`: evidence citations for factual claims.
 
 ## Loop behavior
 The tariff pack runs a propose → critique → verify → revise loop until the verifier accepts or `max_iters` is reached.

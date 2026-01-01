@@ -56,7 +56,9 @@ def _build_result() -> VerificationResult:
 
 
 class FakeVerifier:
-    async def verify_sync(self, input_text: str, pack: str, options=None) -> VerificationResult:
+    async def verify_sync(
+        self, input_text: str, pack: str, options=None, evidence=None
+    ) -> VerificationResult:
         return _build_result()
 
 

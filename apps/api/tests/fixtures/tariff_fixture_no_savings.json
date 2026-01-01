@@ -1,0 +1,163 @@
+{
+  "proposals": [
+    {
+      "product_summary": "Duty-free stainless steel bottle with fixed classification.",
+      "assumptions": [
+        "Already classified as duty-free under current HTS.",
+        "No preferential trade program claimed."
+      ],
+      "baseline": {
+        "hts_code": "7323.99.00",
+        "duty_rate_pct": 0.0,
+        "duty_basis": "ad valorem",
+        "rationale": "Household stainless steel article with duty-free rate.",
+        "confidence": 0.7
+      },
+      "mutations": [
+        {
+          "id": "m1",
+          "title": "Minor finish change",
+          "category": "process",
+          "change": "Adjust polishing process; no classification change expected.",
+          "expected_effect": "unknown",
+          "expected_hts_change": null,
+          "expected_duty_rate_pct": 0.0,
+          "expected_savings_note": "No savings expected; baseline is duty-free.",
+          "rationale": "Process change does not change essential character.",
+          "legal_rationale": "Finish changes rarely change heading.",
+          "risk_level": "low",
+          "constraints": ["Manufacturing impact"],
+          "required_evidence": ["Process spec"]
+        },
+        {
+          "id": "m2",
+          "title": "Documentation cleanup",
+          "category": "documentation",
+          "change": "Improve commercial invoice descriptions.",
+          "expected_effect": "unknown",
+          "expected_hts_change": null,
+          "expected_duty_rate_pct": 0.0,
+          "expected_savings_note": "No direct savings; improves compliance.",
+          "rationale": "Documentation helps avoid delays.",
+          "legal_rationale": "Accurate documentation required.",
+          "risk_level": "low",
+          "constraints": ["Requires training"],
+          "required_evidence": ["Invoice templates"]
+        },
+        {
+          "id": "m3",
+          "title": "Packaging clarification",
+          "category": "packaging",
+          "change": "Keep packaging simple to avoid set classification.",
+          "expected_effect": "unknown",
+          "expected_hts_change": null,
+          "expected_duty_rate_pct": 0.0,
+          "expected_savings_note": "No savings expected.",
+          "rationale": "Packaging does not alter heading.",
+          "legal_rationale": "GRI 5 applies to packing.",
+          "risk_level": "low",
+          "constraints": ["Marketing constraints"],
+          "required_evidence": ["Packaging specs"]
+        },
+        {
+          "id": "m4",
+          "title": "Component stability",
+          "category": "component",
+          "change": "Keep stainless steel body dominant.",
+          "expected_effect": "unknown",
+          "expected_hts_change": null,
+          "expected_duty_rate_pct": 0.0,
+          "expected_savings_note": "No savings expected.",
+          "rationale": "Component mix already optimal.",
+          "legal_rationale": "Essential character remains stainless steel.",
+          "risk_level": "low",
+          "constraints": ["No resin substitution"],
+          "required_evidence": ["BOM"]
+        },
+        {
+          "id": "m5",
+          "title": "Assembly consistency",
+          "category": "assembly",
+          "change": "Keep assembly method unchanged.",
+          "expected_effect": "unknown",
+          "expected_hts_change": null,
+          "expected_duty_rate_pct": 0.0,
+          "expected_savings_note": "No savings expected.",
+          "rationale": "Assembly method does not change classification.",
+          "legal_rationale": "Assembly details do not affect heading.",
+          "risk_level": "low",
+          "constraints": ["No process change"],
+          "required_evidence": ["Assembly work instruction"]
+        },
+        {
+          "id": "m6",
+          "title": "Material confirmation",
+          "category": "materials",
+          "change": "Confirm stainless steel grade; no change expected.",
+          "expected_effect": "unknown",
+          "expected_hts_change": null,
+          "expected_duty_rate_pct": 0.0,
+          "expected_savings_note": "No savings expected.",
+          "rationale": "Material already duty-free.",
+          "legal_rationale": "Material composition supports current heading.",
+          "risk_level": "low",
+          "constraints": ["Supplier alignment"],
+          "required_evidence": ["Material certs"]
+        },
+        {
+          "id": "m7",
+          "title": "Use statement",
+          "category": "use",
+          "change": "Document household use; no classification change.",
+          "expected_effect": "unknown",
+          "expected_hts_change": null,
+          "expected_duty_rate_pct": 0.0,
+          "expected_savings_note": "No savings expected.",
+          "rationale": "Use does not change duty-free status.",
+          "legal_rationale": "Use-based notes not applicable.",
+          "risk_level": "low",
+          "constraints": ["Labeling updates"],
+          "required_evidence": ["Product literature"]
+        },
+        {
+          "id": "m8",
+          "title": "Classification argument",
+          "category": "classification_argument",
+          "change": "Prepare ruling summary confirming duty-free status.",
+          "expected_effect": "unknown",
+          "expected_hts_change": null,
+          "expected_duty_rate_pct": 0.0,
+          "expected_savings_note": "No savings expected; confirm status.",
+          "rationale": "Documentation reduces disputes.",
+          "legal_rationale": "Binding ruling supports compliance.",
+          "risk_level": "low",
+          "constraints": ["Lead time"],
+          "required_evidence": ["Ruling summary"]
+        }
+      ],
+      "best_option_id": null,
+      "optimized": {
+        "hts_code": "7323.99.00",
+        "duty_rate_pct": 0.0,
+        "estimated_savings_per_unit": 0.0,
+        "rationale": "Cannot reduce duty because baseline is already duty-free.",
+        "risk_flags": ["No savings available under provided constraints"]
+      },
+      "questions_for_user": [
+        "Can you confirm the exact stainless steel grade?",
+        "Are any non-steel components substantial in value?",
+        "Is the product marketed for household use only?"
+      ],
+      "citations": []
+    }
+  ],
+  "critics": [
+    {
+      "unsupported": [],
+      "missing": [],
+      "conflicts": [],
+      "suggested_fixes": [],
+      "revised_questions_for_user": []
+    }
+  ]
+}

@@ -25,7 +25,7 @@ def test_run_smoke_constructs_endpoints(monkeypatch) -> None:
 
     monkeypatch.setattr(httpx.Client, "request", fake_request)
 
-    exit_code = run_smoke("http://example.com/", "general", llm_mode="mock")
+    exit_code = run_smoke("http://example.com/", "general", llm_mode="fixture")
     assert exit_code == 0
 
     endpoints = build_endpoints("http://example.com/")

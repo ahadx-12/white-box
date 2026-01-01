@@ -60,12 +60,14 @@ def run_deep_verify(job_id: str, payload: dict[str, Any]) -> None:
             options = VerifyOptions(
                 max_iters=options_payload.get("max_iters"),
                 threshold=options_payload.get("threshold"),
+                min_mutations=options_payload.get("min_mutations"),
             )
         result = _run(
             _verifier_service().verify_sync(
                 input_text=payload.get("input", job.input_text),
                 pack=payload.get("pack", job.pack),
                 options=options,
+                evidence=payload.get("evidence"),
             )
         )
         normalized = normalize_verification_result(result)
