@@ -41,6 +41,9 @@ where = ["packages/core/src"]
 addopts = "-q"
 testpaths = ["packages/core/tests", "apps/api/tests", "apps/worker/tests"]
 pythonpath = [".", "packages/core/src", "apps/api/src", "apps/worker/src"]
+markers = [
+  "live: marks tests that hit live LLM providers (skipped by default)",
+]
 
 [tool.ruff]
 line-length = 100

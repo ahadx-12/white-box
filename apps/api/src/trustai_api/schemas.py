@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 class VerifyOptions(BaseModel):
     max_iters: int | None = Field(default=None, ge=1)
     threshold: float | None = Field(default=None, ge=0.0, le=1.0)
+    min_mutations: int | None = Field(default=None, ge=1)
 
 
 class VerifyRequest(BaseModel):
@@ -15,6 +16,7 @@ class VerifyRequest(BaseModel):
     mode: Literal["sync", "async"] | None = None
     options: VerifyOptions | None = None
     pack: str | None = None
+    evidence: list[str] | None = None
 
 
 class IterationTraceResponse(BaseModel):

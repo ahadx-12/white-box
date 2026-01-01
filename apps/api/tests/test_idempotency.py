@@ -59,8 +59,9 @@ class FakeVerifier:
         input_text: str,
         pack: str,
         options: Any = None,
+        evidence: Any = None,
     ) -> VerificationResult:
-        self.calls.append((input_text, pack, options))
+        self.calls.append((input_text, pack, options, evidence))
         return self._result
 
 

@@ -26,12 +26,15 @@ from trustai_core.utils.hashing import sha256_canonical_json
 
 TARIFF_PACK_VERSION = "0.1"
 TARIFF_THRESHOLD_DEFAULT = 0.92
+TARIFF_MIN_MUTATIONS_DEFAULT = 8
 
 
 @dataclass
 class TariffOptions:
     max_iters: int = 4
     threshold: float = TARIFF_THRESHOLD_DEFAULT
+    min_mutations: int = TARIFF_MIN_MUTATIONS_DEFAULT
+    evidence: list[str] | None = None
 
 
 class TariffPack:
@@ -45,15 +48,17 @@ class TariffPack:
 
     async def run(self, input_text: str, options: dict[str, object] | None) -> TariffVerificationResult:
         resolved_options = _resolve_options(options)
-        fixture = _load_fixture()
-        if fixture:
-            return await self._run_with_fixture(input_text, resolved_options, fixture)
-        if self._context.llm_mode == "mock":
+        evidence = resolved_options.evidence
+        if self._context.llm_mode != "live":
+            fixture = _load_fixture()
+            if fixture:
+                return await self._run_with_fixture(input_text, resolved_options, fixture)
             return _build_llm_error_result(
                 input_text,
                 self.name,
                 self.fingerprint,
-                "Mock mode requires FAKE_LLM=1 for the tariff pack.",
+                "Fixture mode enabled but no tariff fixture was found.",
+                evidence=evidence,
             )
         router = _select_router(self._context)
         if router.error:
@@ -62,6 +67,7 @@ class TariffPack:
                 self.name,
                 self.fingerprint,
                 router.error,
+                evidence=evidence,
             )
         iterations: list[TariffVerifyIteration] = []
         critic_outputs: list[TariffCritique] = []
@@ -79,12 +85,14 @@ class TariffPack:
                         dossier,
                         critic_outputs[-1].model_dump(),
                         mismatch_report,
+                        evidence,
                         _tariff_dossier_schema(),
                     )
                 else:
                     prompt = build_tariff_proposal_prompt(
                         input_text,
                         feedback,
+                        evidence,
                         _tariff_dossier_schema(),
                     )
                 dossier = await router.proposer.complete_tariff(prompt)
@@ -92,6 +100,7 @@ class TariffPack:
                     build_tariff_critic_prompt(
                         input_text,
                         dossier,
+                        evidence,
                         _tariff_critique_schema(),
                     )
                 )
@@ -102,6 +111,7 @@ class TariffPack:
                     previous_bundle=previous_bundle,
                     previous_dossier=previous_dossier,
                     threshold=resolved_options.threshold,
+                    min_mutations=resolved_options.min_mutations,
                 )
                 iterations.append(iteration)
                 critic_outputs.append(critique)
@@ -115,6 +125,7 @@ class TariffPack:
                 self.name,
                 self.fingerprint,
                 f"LLM error: {exc}",
+                evidence=evidence,
             )
 
         final_answer = _format_tariff_report(dossier) if dossier else None
@@ -129,6 +140,7 @@ class TariffPack:
             dossier,
             critic_outputs,
             router.model_routing,
+            evidence,
         )
         proof_id = sha256_canonical_json(proof_payload)
         return TariffVerificationResult(
@@ -159,6 +171,7 @@ class TariffPack:
                 self.name,
                 self.fingerprint,
                 "Fixture missing proposals or critiques.",
+                evidence=options.evidence,
             )
         iterations: list[TariffVerifyIteration] = []
         critic_outputs: list[TariffCritique] = []
@@ -179,6 +192,7 @@ class TariffPack:
                 previous_bundle=previous_bundle,
                 previous_dossier=previous_dossier,
                 threshold=options.threshold,
+                min_mutations=options.min_mutations,
             )
             iterations.append(iteration)
             critic_outputs.append(critique)
@@ -202,6 +216,7 @@ class TariffPack:
             dossier,
             critic_outputs,
             model_routing,
+            options.evidence,
         )
         proof_id = sha256_canonical_json(proof_payload)
         return TariffVerificationResult(
@@ -277,7 +292,19 @@ def _resolve_options(options: dict[str, object] | None) -> TariffOptions:
         return TariffOptions()
     max_iters = int(options.get("max_iters") or 4)
     threshold = float(options.get("threshold") or TARIFF_THRESHOLD_DEFAULT)
-    return TariffOptions(max_iters=max_iters, threshold=threshold)
+    min_mutations = int(options.get("min_mutations") or TARIFF_MIN_MUTATIONS_DEFAULT)
+    evidence_value = options.get("evidence")
+    evidence: list[str] | None = None
+    if isinstance(evidence_value, list):
+        evidence = [str(item) for item in evidence_value]
+    elif isinstance(evidence_value, str):
+        evidence = [evidence_value]
+    return TariffOptions(
+        max_iters=max_iters,
+        threshold=threshold,
+        min_mutations=min_mutations,
+        evidence=evidence,
+    )
 
 
 def _select_router(context: PackContext) -> RouterSelection:
@@ -342,6 +369,7 @@ def _build_llm_error_result(
     pack: str,
     fingerprint: str,
     error: str,
+    evidence: list[str] | None = None,
 ) -> TariffVerificationResult:
     iteration = TariffVerifyIteration(
         i=1,
@@ -373,6 +401,7 @@ def _build_llm_error_result(
         None,
         [],
         {},
+        evidence,
     )
     proof_id = sha256_canonical_json(payload)
     return TariffVerificationResult(
@@ -398,6 +427,41 @@ def _tariff_critique_schema() -> dict[str, Any]:
     return TariffCritique.model_json_schema()
 
 
+@dataclass
+class GateResult:
+    rejected_because: list[str]
+    missing: list[str]
+    unsupported: list[str]
+    conflicts: list[str]
+
+
+ALLOWED_CATEGORIES = {
+    "materials",
+    "construction",
+    "component",
+    "process",
+    "origin",
+    "packaging",
+    "use",
+    "assembly",
+    "documentation",
+    "classification_argument",
+}
+ALLOWED_EXPECTED_EFFECTS = {"hts_change", "duty_rate_change", "unknown"}
+ALLOWED_RISK_LEVELS = {"low", "med", "high"}
+ILLEGAL_EVASION_TERMS = {
+    "misdeclare",
+    "fake",
+    "falsify",
+    "lie",
+    "false invoice",
+    "fraud",
+    "evade",
+    "smuggle",
+    "bribe",
+}
+
+
 def _evaluate_iteration(
     i: int,
     dossier: TariffDossier,
@@ -405,21 +469,20 @@ def _evaluate_iteration(
     previous_bundle: list[int] | None,
     previous_dossier: TariffDossier | None,
     threshold: float,
+    min_mutations: int,
 ) -> tuple[TariffVerifyIteration, list[int], str]:
     rejected_because: list[str] = []
-    conflicts = sorted(set(critique.conflicts))
-    unsupported = sorted(set(critique.unsupported))
-    missing = sorted(set(critique.missing))
+    gate = _gate_dossier(dossier, min_mutations)
+    conflicts = sorted(set(critique.conflicts + gate.conflicts))
+    unsupported = sorted(set(critique.unsupported + gate.unsupported))
+    missing = sorted(set(critique.missing + gate.missing))
+    rejected_because.extend(gate.rejected_because)
 
     baseline_duty = dossier.baseline.duty_rate_pct
     optimized_duty = dossier.optimized.duty_rate_pct
 
     if baseline_duty is None and not dossier.questions_for_user:
         rejected_because.append("baseline_duty_missing")
-
-    if len(dossier.mutations) < 5:
-        if "cannot reduce" not in dossier.optimized.rationale.lower():
-            rejected_because.append("insufficient_mutations")
 
     if baseline_duty is not None and optimized_duty is not None:
         if dossier.best_option_id and optimized_duty > baseline_duty:
@@ -428,9 +491,6 @@ def _evaluate_iteration(
     has_lowering_option = _has_lowering_option(dossier)
     if not has_lowering_option and "cannot reduce" not in dossier.optimized.rationale.lower():
         rejected_because.append("no_lowering_option")
-
-    if not dossier.best_option_id and dossier.optimized.duty_rate_pct is not None:
-        rejected_because.append("missing_best_option")
 
     hdc_bundle = bundle_tokens(_hdc_tokens(dossier))
     hdc = compare_bundles(previous_bundle, hdc_bundle)
@@ -451,6 +511,9 @@ def _evaluate_iteration(
     mismatch_report = _build_mismatch_report(rejected_because, hdc)
     feedback_text = _build_feedback_text(rejected_because, critique, mismatch_report)
     answer_delta_summary = _summarize_dossier_delta(previous_dossier, dossier)
+    conflicts = _cap_list(conflicts, 50)
+    unsupported = _cap_list(unsupported, 50)
+    missing = _cap_list(missing, 50)
     top_conflicts = _build_top_conflicts(rejected_because, conflicts, unsupported, missing)
 
     iteration = TariffVerifyIteration(
@@ -468,6 +531,121 @@ def _evaluate_iteration(
         mismatch_report=mismatch_report,
     )
     return iteration, hdc_bundle, mismatch_report
+
+
+def _gate_dossier(dossier: TariffDossier, min_mutations: int) -> GateResult:
+    rejected_because: list[str] = []
+    missing: list[str] = []
+    unsupported: list[str] = []
+    conflicts: list[str] = []
+
+    hts_code = (dossier.baseline.hts_code or "").strip()
+    if not hts_code or hts_code.lower() == "unknown":
+        if len(dossier.questions_for_user) < 3:
+            missing.append("questions_for_user (>=3 required when HTS unknown)")
+            rejected_because.append("hts_or_questions_missing")
+
+    if len(dossier.mutations) < min_mutations:
+        if "cannot reduce" not in dossier.optimized.rationale.lower():
+            missing.append(f"mutations (min {min_mutations})")
+            rejected_because.append("insufficient_mutations")
+
+    mutation_ids = {mutation.id for mutation in dossier.mutations if mutation.id}
+    if not dossier.best_option_id or dossier.best_option_id not in mutation_ids:
+        missing.append("best_option_id (must reference mutation id)")
+        rejected_because.append("missing_best_option")
+
+    for mutation in dossier.mutations:
+        if not mutation.id:
+            missing.append("mutation id")
+            rejected_because.append("mutation_fields_incomplete")
+        if mutation.category not in ALLOWED_CATEGORIES:
+            unsupported.append(f"mutation {mutation.id} category '{mutation.category}' invalid")
+            rejected_because.append("invalid_mutation_category")
+        if mutation.expected_effect not in ALLOWED_EXPECTED_EFFECTS:
+            unsupported.append(
+                f"mutation {mutation.id} expected_effect '{mutation.expected_effect}' invalid"
+            )
+            rejected_because.append("invalid_mutation_expected_effect")
+        if mutation.risk_level not in ALLOWED_RISK_LEVELS:
+            unsupported.append(f"mutation {mutation.id} risk_level '{mutation.risk_level}' invalid")
+            rejected_because.append("invalid_mutation_risk_level")
+        if not mutation.required_evidence:
+            missing.append(f"mutation {mutation.id} required_evidence")
+            rejected_because.append("mutation_missing_evidence")
+        if not mutation.rationale.strip():
+            missing.append(f"mutation {mutation.id} rationale")
+            rejected_because.append("mutation_missing_rationale")
+        if _contains_illegal_terms(_mutation_text(mutation)):
+            conflicts.append(f"mutation {mutation.id} contains illegal evasion suggestion")
+            rejected_because.append("illegal_evasion_suggestion")
+        if _is_origin_mutation(mutation):
+            if not _contains_substantial_transformation(mutation):
+                conflicts.append(
+                    f"mutation {mutation.id} origin change without substantial transformation"
+                )
+                rejected_because.append("origin_without_substantial_transformation")
+
+    has_precise_claim = any(
+        [
+            dossier.baseline.hts_code,
+            dossier.baseline.duty_rate_pct is not None,
+            dossier.optimized.hts_code,
+            dossier.optimized.duty_rate_pct is not None,
+        ]
+    )
+    if has_precise_claim and not dossier.citations and not dossier.assumptions:
+        missing.append("citations or assumptions for precise claims")
+        rejected_because.append("missing_citations_or_assumptions")
+
+    if dossier.baseline.duty_rate_pct is not None and dossier.baseline.confidence >= 0.8:
+        if not dossier.assumptions:
+            missing.append("assumptions for high-confidence duty rate")
+            rejected_because.append("high_confidence_without_assumptions")
+        if not dossier.baseline.rationale.strip():
+            missing.append("baseline rationale for high-confidence duty rate")
+            rejected_because.append("high_confidence_missing_rationale")
+
+    return GateResult(
+        rejected_because=sorted(set(rejected_because)),
+        missing=sorted(set(missing)),
+        unsupported=sorted(set(unsupported)),
+        conflicts=sorted(set(conflicts)),
+    )
+
+
+def _mutation_text(mutation: Any) -> str:
+    parts = [
+        mutation.title,
+        mutation.category,
+        mutation.change,
+        mutation.expected_effect,
+        mutation.expected_savings_note,
+        mutation.rationale,
+        mutation.legal_rationale,
+        " ".join(mutation.constraints),
+    ]
+    return " ".join(part for part in parts if part)
+
+
+def _contains_illegal_terms(text: str) -> bool:
+    lowered = text.lower()
+    return any(term in lowered for term in ILLEGAL_EVASION_TERMS)
+
+
+def _is_origin_mutation(mutation: Any) -> bool:
+    if mutation.category == "origin":
+        return True
+    return "origin" in mutation.title.lower() or "origin" in mutation.change.lower()
+
+
+def _contains_substantial_transformation(mutation: Any) -> bool:
+    text = _mutation_text(mutation).lower()
+    return "substantial transformation" in text
+
+
+def _cap_list(items: list[str], limit: int) -> list[str]:
+    return items[:limit]
 
 
 def _has_lowering_option(dossier: TariffDossier) -> bool:
@@ -564,7 +742,7 @@ def _build_top_conflicts(
     items.extend(unsupported)
     items.extend(missing)
     items.extend(rejected_because)
-    return items[:6]
+    return items[:5]
 
 
 def _build_explain(iterations: list[TariffVerifyIteration]) -> dict[str, Any]:
@@ -598,13 +776,16 @@ def _build_proof_payload(
     dossier: TariffDossier | None,
     critics: list[TariffCritique],
     model_routing: dict[str, Any],
+    evidence: list[str] | None,
 ) -> dict[str, Any]:
     status = "verified" if iterations and iterations[-1].accepted else "failed"
     return {
         "status": status,
         "pack": pack,
         "pack_fingerprint": fingerprint,
-        "evidence_manifest_hash": sha256_canonical_json({"input": input_text}),
+        "evidence_manifest_hash": sha256_canonical_json(
+            {"input": input_text, "evidence": evidence or []}
+        ),
         "final_answer": final_answer,
         "iterations": [item.model_dump() for item in iterations],
         "explain": explain,
@@ -653,7 +834,10 @@ def _format_tariff_report(dossier: TariffDossier | None) -> str:
 
 
 def _load_fixture() -> dict[str, Any] | None:
-    if os.getenv("FAKE_LLM") != "1":
+    llm_mode = os.getenv("TRUSTAI_LLM_MODE", "fixture").lower()
+    if llm_mode == "mock":
+        llm_mode = "fixture"
+    if llm_mode != "fixture" and os.getenv("FAKE_LLM") != "1":
         return None
     fixture_path = os.getenv("TRUSTAI_TARIFF_FIXTURE")
     if fixture_path:

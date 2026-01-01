@@ -3,7 +3,7 @@ set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://127.0.0.1:8000}"
 PACK="${PACK:-general}"
-export TRUSTAI_LLM_MODE="${TRUSTAI_LLM_MODE:-mock}"
+export TRUSTAI_LLM_MODE="${TRUSTAI_LLM_MODE:-fixture}"
 
 PYTHONPATH="apps/api/src:packages/core/src" uvicorn trustai_api.main:create_app --factory --app-dir apps/api/src --host 127.0.0.1 --port 8000 &
 UVICORN_PID=$!

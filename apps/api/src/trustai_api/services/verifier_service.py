@@ -24,6 +24,7 @@ VerifierFn = Callable[..., Awaitable[VerificationResult]]
 class VerifyOptions:
     max_iters: int | None = None
     threshold: float | None = None
+    min_mutations: int | None = None
 
 
 class VerifierService:
@@ -42,12 +43,12 @@ class VerifierService:
         self._reasoner: Reasoner | None = None
 
     def _default_perceiver(self) -> LLMClient:
-        if self._settings.llm_mode == "mock":
+        if self._settings.llm_mode != "live":
             return MockLLMClient()
         return OpenAIClient(model=self._settings.openai_model)
 
     def _default_reasoner(self) -> LLMClient:
-        if self._settings.llm_mode == "mock":
+        if self._settings.llm_mode != "live":
             return MockLLMClient()
         return AnthropicClient(model=self._settings.claude_model)
 
@@ -81,6 +82,7 @@ class VerifierService:
         input_text: str,
         pack: str,
         options: VerifyOptions | None = None,
+        evidence: list[str] | None = None,
     ) -> VerificationResult | TariffVerificationResult:
         self.reset_debug()
         resolved_options = options or VerifyOptions()
@@ -101,7 +103,11 @@ class VerifierService:
             ),
         )
         if pack_runner:
-            options_payload = {"max_iters": max_iters, "threshold": threshold}
+            options_payload: dict[str, object] = {"max_iters": max_iters, "threshold": threshold}
+            if resolved_options.min_mutations is not None:
+                options_payload["min_mutations"] = resolved_options.min_mutations
+            if evidence:
+                options_payload["evidence"] = evidence
             return await pack_runner.run(input_text, options_payload)
         try:
             return await self._verifier_fn(
@@ -117,11 +123,11 @@ class VerifierService:
             return exc.result
 
     def _openai_client(self) -> LLMClient:
-        if self._settings.llm_mode == "mock":
+        if self._settings.llm_mode != "live":
             return MockLLMClient()
         return OpenAIClient(model=self._settings.openai_model)
 
     def _anthropic_client(self) -> LLMClient:
-        if self._settings.llm_mode == "mock":
+        if self._settings.llm_mode != "live":
             return MockLLMClient()
         return AnthropicClient(model=self._settings.claude_model)

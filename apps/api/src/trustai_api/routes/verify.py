@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 from uuid import uuid4
 
@@ -21,6 +22,7 @@ from trustai_api.services.verifier_service import VerifierService, VerifyOptions
 from trustai_api.settings import Settings
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post(
@@ -73,6 +75,7 @@ async def verify(
             "pack": pack,
             "mode": resolved_mode,
             "options": body.options.model_dump() if body.options else None,
+            "evidence": body.evidence,
         }
     )
 
@@ -87,6 +90,7 @@ async def verify(
             "input": body.input,
             "pack": pack,
             "options": body.options.model_dump() if body.options else None,
+            "evidence": body.evidence,
         }
         job_store.create(
             db,
@@ -105,6 +109,17 @@ async def verify(
                 job_id=job_id,
             )
         enqueue_verify(queue, job_id=job_id, payload=async_payload)
+        logger.info(
+            "verify_request",
+            extra={
+                "pack": pack,
+                "mode": resolved_mode,
+                "llm_mode": settings.llm_mode,
+                "iteration_count": 0,
+                "final_score": None,
+                "model_routing": None,
+            },
+        )
         return {"job_id": job_id, "status": "queued"}
 
     options = None
@@ -112,15 +127,33 @@ async def verify(
         options = VerifyOptions(
             max_iters=body.options.max_iters,
             threshold=body.options.threshold,
+            min_mutations=body.options.min_mutations,
         )
     try:
-        result = await verifier.verify_sync(body.input, pack, options)
+        result = await verifier.verify_sync(body.input, pack, options, evidence=body.evidence)
     except LLMError as exc:
         raise HTTPException(status_code=503, detail=f"Upstream LLM error: {exc}") from exc
     debug_enabled = x_trustai_debug == "1" or (x_trustai_debug is None and settings.debug_default)
     debug_info = verifier.debug_info() if debug_enabled else None
     payload = normalize_verification_result(
         result, include_debug=debug_enabled, debug_info=debug_info
+    )
+    final_score = None
+    if payload.get("iterations"):
+        final_score = payload["iterations"][-1].get("score")
+    model_routing = None
+    if isinstance(payload.get("proof"), dict):
+        model_routing = payload["proof"].get("model_routing")
+    logger.info(
+        "verify_request",
+        extra={
+            "pack": pack,
+            "mode": resolved_mode,
+            "llm_mode": settings.llm_mode,
+            "iteration_count": len(payload.get("iterations", [])),
+            "final_score": final_score,
+            "model_routing": model_routing,
+        },
     )
     create_result = proof_store.create(
         db,

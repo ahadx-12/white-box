@@ -36,10 +36,19 @@ class Mutation(BaseModel):
     expected_hts_change: str | None = None
     expected_duty_rate_pct: float | None = None
     expected_savings_note: str
+    rationale: str
     legal_rationale: str
     risk_level: str
     constraints: list[str]
     required_evidence: list[str]
+
+
+class TariffCitation(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    evidence_index: int
+    quote: str
+    claim: str
 
 
 class TariffDossier(BaseModel):
@@ -52,7 +61,7 @@ class TariffDossier(BaseModel):
     best_option_id: str | None = None
     optimized: TariffOptimized
     questions_for_user: list[str]
-    citations: list[str]
+    citations: list[TariffCitation]
 
 
 class TariffCritique(BaseModel):
