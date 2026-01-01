@@ -1,15 +1,11 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "npm-9_x"]
+nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = [
-  "cd apps/dashboard && npm ci"
-]
+cmds = ["npm ci"]
 
 [phases.build]
-cmds = [
-  "cd apps/dashboard && npm run build"
-]
+cmds = ["npm run build"]
 
 [start]
-cmd = "cd apps/dashboard && npm run start -- -p $PORT -H 0.0.0.0"
+cmd = "npm run start -- -p $PORT -H 0.0.0.0"
