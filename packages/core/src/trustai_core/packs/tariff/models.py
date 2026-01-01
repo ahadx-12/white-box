@@ -185,3 +185,4 @@ class TariffVerificationResult(BaseModel):
     tariff_dossier: TariffDossier | None
     critic_outputs: list[TariffCritique]
     model_routing: dict[str, Any]
+    proposal_history: list[TariffDossier] = Field(default_factory=list)
