@@ -1,0 +1,35 @@
+{
+  "id": "tariff_pos_11_youth_sneaker",
+  "pack_id": "tariff",
+  "case_type": "positive",
+  "difficulty": "easy",
+  "input": {
+    "input": "Tariff classify a youth sneaker with textile upper and rubber outsole.",
+    "options": {
+      "max_iters": 4
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6402.99"
+    ],
+    "allowed_hts": [
+      "6404.11.90"
+    ],
+    "must_not_hts": [
+      "6406.10.0000"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "youth",
+      "footwear",
+      "chapter_64"
+    ]
+  }
+}

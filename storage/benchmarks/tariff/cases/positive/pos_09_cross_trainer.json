@@ -1,0 +1,35 @@
+{
+  "id": "tariff_pos_09_cross_trainer",
+  "pack_id": "tariff",
+  "case_type": "positive",
+  "difficulty": "medium",
+  "input": {
+    "input": "Classify a cross-training shoe with textile upper and rubber outsole, no waterproofing.",
+    "options": {
+      "max_iters": 4
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6402.99"
+    ],
+    "allowed_hts": [
+      "6404.11.90"
+    ],
+    "must_not_hts": [
+      "6404.19.0000"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "cross_trainer",
+      "footwear",
+      "chapter_64"
+    ]
+  }
+}
