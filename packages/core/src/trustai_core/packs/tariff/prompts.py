@@ -2,22 +2,18 @@ from __future__ import annotations
 
 from textwrap import dedent
 
+from trustai_core.packs.tariff.evidence.models import EvidenceSource
 from trustai_core.packs.tariff.models import TariffDossier
 
 
 def build_tariff_proposal_prompt(
     input_text: str,
     feedback: str | None,
-    evidence: list[str] | None,
+    evidence_bundle: list[EvidenceSource] | None,
     schema: dict,
 ) -> str:
     feedback_block = f"\n\nVerifier feedback:\n{feedback}\n" if feedback else ""
-    evidence_block = ""
-    if evidence:
-        evidence_lines = "\n".join(
-            f"- evidence[{idx}]: {item}" for idx, item in enumerate(evidence)
-        )
-        evidence_block = f"\n\nEvidence (cite by index):\n{evidence_lines}\n"
+    evidence_block = _build_evidence_block(evidence_bundle)
     return dedent(
         f"""
         You are a tariff engineering assistant. Your job is to legally reduce duties while staying compliant.
@@ -48,10 +44,11 @@ def build_tariff_proposal_prompt(
           Never suggest evasion. Include citations_required=true for each candidate.
         - Provide compliance_notes that emphasize lawful redesign, documentation, and auditability.
         - Use numeric duty_rate_pct where possible; if unknown, set null and ask questions.
-        - If you make specific factual claims (exact HTS/duty), include citations with short quotes
-          (<=25 words) and reference evidence index. If no evidence supports the claim, mark it
-          as an assumption.
-        - Output citations as objects: {{"evidence_index": 0, "quote": "...", "claim": "..."}}.
+        - Every HTS code claim must include at least one citation with source_id and a verbatim quote.
+        - Every GRI step must include at least one citation with source_id starting with GRI.*.
+        - Essential character must cite either a chapter/section note or GRI.3.
+        - If no evidence supports a factual claim, mark it as an assumption instead.
+        - Output citations as objects: {{"claim_type": "...", "claim": "...", "source_id": "...", "quote": "..."}}.
 
         Return JSON only.
         Schema:
@@ -63,15 +60,10 @@ def build_tariff_proposal_prompt(
 def build_tariff_critic_prompt(
     input_text: str,
     dossier: TariffDossier,
-    evidence: list[str] | None,
+    evidence_bundle: list[EvidenceSource] | None,
     schema: dict,
 ) -> str:
-    evidence_block = ""
-    if evidence:
-        evidence_lines = "\n".join(
-            f"- evidence[{idx}]: {item}" for idx, item in enumerate(evidence)
-        )
-        evidence_block = f"\n\nEvidence (cite by index):\n{evidence_lines}\n"
+    evidence_block = _build_evidence_block(evidence_bundle)
     return dedent(
         f"""
         You are a compliance critic. Review the proposed tariff dossier for unsupported claims,
@@ -97,15 +89,10 @@ def build_tariff_revision_prompt(
     dossier: TariffDossier,
     critique_payload: dict,
     mismatch_report: str,
-    evidence: list[str] | None,
+    evidence_bundle: list[EvidenceSource] | None,
     schema: dict,
 ) -> str:
-    evidence_block = ""
-    if evidence:
-        evidence_lines = "\n".join(
-            f"- evidence[{idx}]: {item}" for idx, item in enumerate(evidence)
-        )
-        evidence_block = f"\n\nEvidence (cite by index):\n{evidence_lines}\n"
+    evidence_block = _build_evidence_block(evidence_bundle)
     return dedent(
         f"""
         Revise the tariff dossier to address the critique and mismatch report.
@@ -132,3 +119,13 @@ def build_tariff_revision_prompt(
         {schema}
         """
     ).strip()
+
+
+def _build_evidence_block(evidence_bundle: list[EvidenceSource] | None) -> str:
+    if not evidence_bundle:
+        return ""
+    evidence_lines = "\n".join(
+        f"{idx + 1}. [{source.source_id}] ({source.source_type}) {source.text}"
+        for idx, source in enumerate(evidence_bundle)
+    )
+    return f"\n\nEvidence bundle (cite using source_id):\n{evidence_lines}\n"

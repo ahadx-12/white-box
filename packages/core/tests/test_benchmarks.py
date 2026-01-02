@@ -38,6 +38,16 @@ def _fake_result(hts_code: str, accepted: bool = True) -> dict:
                 "accepted": accepted,
                 "rejected_because": [] if accepted else ["hts_or_questions_missing"],
                 "sequence_violations": [],
+                "citation_gate_result": {"ok": True, "violations": []},
+            }
+        ],
+        "citation_gate_result": {"ok": True, "violations": []},
+        "citations": [
+            {
+                "claim_type": "hts_classification",
+                "claim": "HTS classification",
+                "source_id": "HTS.6404",
+                "quote": "Footwear with outer soles",
             }
         ],
         "tariff_dossier": {

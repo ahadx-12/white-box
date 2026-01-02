@@ -69,7 +69,7 @@ def test_tariff_pack_evidence_citations(client, monkeypatch):
     payload = response.json()
     dossier = payload["proof"]["tariff_dossier"]
     assert dossier["citations"]
-    assert all("evidence_index" in item for item in dossier["citations"])
+    assert all("source_id" in item for item in dossier["citations"])
 
 
 def test_tariff_pack_async_job(client, app, monkeypatch):
