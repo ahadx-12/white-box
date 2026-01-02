@@ -13,6 +13,7 @@ TARIFF_CRITICAL_GATES = (
     "ontology_mutex_conflict",
     "too_many_what_if_candidates",
     "missing_what_if_candidates",
+    "citation_gate_failed",
 )
 
 

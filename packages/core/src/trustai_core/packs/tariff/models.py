@@ -56,9 +56,10 @@ class Mutation(BaseModel):
 class TariffCitation(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    evidence_index: int
-    quote: str
+    claim_type: str
     claim: str
+    source_id: str
+    quote: str
 
 
 class GriStepResult(BaseModel):
@@ -169,6 +170,7 @@ class TariffVerifyIteration(BaseModel):
     gri_trace: GriTrace | None = None
     sequence_violations: list[str] = Field(default_factory=list)
     essential_character_score: float | None = None
+    citation_gate_result: dict[str, Any] | None = None
 
 
 class TariffVerificationResult(BaseModel):
@@ -186,3 +188,6 @@ class TariffVerificationResult(BaseModel):
     critic_outputs: list[TariffCritique]
     model_routing: dict[str, Any]
     proposal_history: list[TariffDossier] = Field(default_factory=list)
+    evidence_bundle: list[dict[str, Any]] | None = None
+    citation_gate_result: dict[str, Any] | None = None
+    citations: list[TariffCitation] | None = None

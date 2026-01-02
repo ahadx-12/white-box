@@ -84,9 +84,10 @@ def _base_dossier(mutations: list[Mutation]) -> TariffDossier:
         questions_for_user=[],
         citations=[
             TariffCitation(
-                evidence_index=0,
-                quote="Test quote",
+                claim_type="hts_classification",
                 claim="Test claim",
+                source_id="HTS.0000",
+                quote="Test quote",
             )
         ],
     )

@@ -41,6 +41,26 @@ def _extract_tariff_dossier(payload: dict[str, Any]) -> dict[str, Any] | None:
     return payload.get("tariff_dossier") or proof.get("tariff_dossier")
 
 
+def _extract_citation_gate(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if payload.get("citation_gate_result"):
+        return payload.get("citation_gate_result")
+    proof = payload.get("proof") or {}
+    if proof.get("citation_gate_result"):
+        return proof.get("citation_gate_result")
+    iteration = _extract_final_iteration(payload) or {}
+    return iteration.get("citation_gate_result")
+
+
+def _extract_citations(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    if payload.get("citations"):
+        return list(payload.get("citations") or [])
+    proof = payload.get("proof") or {}
+    if proof.get("citations"):
+        return list(proof.get("citations") or [])
+    dossier = _extract_tariff_dossier(payload) or {}
+    return list(dossier.get("citations") or [])
+
+
 def _extract_final_hts(dossier: dict[str, Any] | None) -> str | None:
     if not dossier:
         return None
@@ -165,6 +185,12 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
     sequence_ok = _extract_sequence_ok(payload, dossier)
     critical_gates_ok = _critical_gates_passed(rejected_because)
     no_savings_ok = _check_no_savings(dossier)
+    citation_gate = _extract_citation_gate(payload) or {}
+    citations_present = bool(_extract_citations(payload))
+    citations_valid = (
+        bool(citation_gate.get("ok")) if citation_gate else None
+    )
+    grounding_enabled = citations_valid is not None
 
     penalties: list[str] = []
     match_level: str | None = None
@@ -206,6 +232,9 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
             if not sequence_ok:
                 penalties.append("gri_sequence_violation")
                 score -= GRI_PENALTY
+            if grounding_enabled and not citations_valid:
+                penalties.append("citations_invalid_or_missing")
+                score = 0.0
             if case.expected.duty_delta_range and duty_delta is not None:
                 low, high = case.expected.duty_delta_range
                 if not (low <= duty_delta <= high):
@@ -243,4 +272,6 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
         no_savings_ok=no_savings_ok if case.expected.no_savings_expected else None,
         process_bonus=round(process_bonus, 4),
         penalties=penalties,
+        citations_present=citations_present if grounding_enabled else None,
+        citations_valid=citations_valid if grounding_enabled else None,
     )

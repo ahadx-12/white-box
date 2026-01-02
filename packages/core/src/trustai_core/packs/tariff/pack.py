@@ -10,6 +10,13 @@ from pydantic import ValidationError
 
 from trustai_core.llm.base import LLMClient, LLMError
 from trustai_core.packs.registry import PackContext, register_pack
+from trustai_core.packs.tariff.evidence import (
+    EvidenceSource,
+    TariffEvidenceRetriever,
+    TariffEvidenceStore,
+)
+from trustai_core.packs.tariff.gates import run_citation_gate
+from trustai_core.packs.tariff.gates.citation_gate import collect_citations
 from trustai_core.packs.tariff.hdc import (
     HDCScore,
     build_composition_vector,
@@ -49,6 +56,8 @@ class TariffOptions:
     threshold: float = TARIFF_THRESHOLD_DEFAULT
     min_mutations: int = TARIFF_MIN_MUTATIONS_DEFAULT
     evidence: list[str] | None = None
+    candidate_chapters: list[str] | None = None
+    evidence_top_k: int = 10
 
 
 class TariffPack:
@@ -62,17 +71,22 @@ class TariffPack:
 
     async def run(self, input_text: str, options: dict[str, object] | None) -> TariffVerificationResult:
         resolved_options = _resolve_options(options)
-        evidence = resolved_options.evidence
+        evidence_bundle = _build_evidence_bundle(input_text, resolved_options)
         if self._context.llm_mode != "live":
             fixture = _load_fixture()
             if fixture:
-                return await self._run_with_fixture(input_text, resolved_options, fixture)
+                return await self._run_with_fixture(
+                    input_text,
+                    resolved_options,
+                    fixture,
+                    evidence_bundle,
+                )
             return _build_llm_error_result(
                 input_text,
                 self.name,
                 self.fingerprint,
                 "Fixture mode enabled but no tariff fixture was found.",
-                evidence=evidence,
+                evidence_bundle=evidence_bundle,
             )
         router = _select_router(self._context)
         if router.error:
@@ -81,7 +95,7 @@ class TariffPack:
                 self.name,
                 self.fingerprint,
                 router.error,
-                evidence=evidence,
+                evidence_bundle=evidence_bundle,
             )
         iterations: list[TariffVerifyIteration] = []
         critic_outputs: list[TariffCritique] = []
@@ -100,14 +114,14 @@ class TariffPack:
                         dossier,
                         critic_outputs[-1].model_dump(),
                         mismatch_report,
-                        evidence,
+                        evidence_bundle,
                         _tariff_dossier_schema(),
                     )
                 else:
                     prompt = build_tariff_proposal_prompt(
                         input_text,
                         feedback,
-                        evidence,
+                        evidence_bundle,
                         _tariff_dossier_schema(),
                     )
                 dossier = await router.proposer.complete_tariff(prompt)
@@ -116,7 +130,7 @@ class TariffPack:
                     build_tariff_critic_prompt(
                         input_text,
                         dossier,
-                        evidence,
+                        evidence_bundle,
                         _tariff_critique_schema(),
                     )
                 )
@@ -128,6 +142,7 @@ class TariffPack:
                     previous_dossier=previous_dossier,
                     threshold=resolved_options.threshold,
                     min_mutations=resolved_options.min_mutations,
+                    evidence_bundle=evidence_bundle,
                 )
                 iterations.append(iteration)
                 critic_outputs.append(critique)
@@ -141,7 +156,7 @@ class TariffPack:
                 self.name,
                 self.fingerprint,
                 f"LLM error: {exc}",
-                evidence=evidence,
+                evidence_bundle=evidence_bundle,
             )
 
         final_answer = _format_tariff_report(dossier) if dossier else None
@@ -156,9 +171,13 @@ class TariffPack:
             dossier,
             critic_outputs,
             router.model_routing,
-            evidence,
+            evidence_bundle,
         )
         proof_id = sha256_canonical_json(proof_payload)
+        citations = collect_citations(dossier) if dossier else []
+        citation_gate_result = (
+            iterations[-1].citation_gate_result if iterations else None
+        )
         return TariffVerificationResult(
             status=proof_payload["status"],
             proof_id=proof_id,
@@ -172,6 +191,9 @@ class TariffPack:
             critic_outputs=critic_outputs,
             model_routing=router.model_routing,
             proposal_history=proposal_history,
+            evidence_bundle=proof_payload.get("evidence_bundle"),
+            citation_gate_result=citation_gate_result,
+            citations=citations or None,
         )
 
     async def _run_with_fixture(
@@ -179,6 +201,7 @@ class TariffPack:
         input_text: str,
         options: TariffOptions,
         fixture: dict[str, Any],
+        evidence_bundle: list[EvidenceSource],
     ) -> TariffVerificationResult:
         proposals = fixture.get("proposals") or []
         critiques = fixture.get("critics") or []
@@ -212,6 +235,7 @@ class TariffPack:
                 previous_dossier=previous_dossier,
                 threshold=options.threshold,
                 min_mutations=options.min_mutations,
+                evidence_bundle=evidence_bundle,
             )
             iterations.append(iteration)
             critic_outputs.append(critique)
@@ -235,9 +259,13 @@ class TariffPack:
             dossier,
             critic_outputs,
             model_routing,
-            options.evidence,
+            evidence_bundle,
         )
         proof_id = sha256_canonical_json(proof_payload)
+        citations = collect_citations(dossier) if dossier else []
+        citation_gate_result = (
+            iterations[-1].citation_gate_result if iterations else None
+        )
         return TariffVerificationResult(
             status=proof_payload["status"],
             proof_id=proof_id,
@@ -251,6 +279,9 @@ class TariffPack:
             critic_outputs=critic_outputs,
             model_routing=model_routing,
             proposal_history=proposal_history,
+            evidence_bundle=proof_payload.get("evidence_bundle"),
+            citation_gate_result=citation_gate_result,
+            citations=citations or None,
         )
 
 
@@ -320,11 +351,20 @@ def _resolve_options(options: dict[str, object] | None) -> TariffOptions:
         evidence = [str(item) for item in evidence_value]
     elif isinstance(evidence_value, str):
         evidence = [evidence_value]
+    candidate_value = options.get("candidate_chapters")
+    candidate_chapters: list[str] | None = None
+    if isinstance(candidate_value, list):
+        candidate_chapters = [str(item) for item in candidate_value]
+    elif isinstance(candidate_value, str):
+        candidate_chapters = [candidate_value]
+    evidence_top_k = int(options.get("evidence_top_k") or 10)
     return TariffOptions(
         max_iters=max_iters,
         threshold=threshold,
         min_mutations=min_mutations,
         evidence=evidence,
+        candidate_chapters=candidate_chapters,
+        evidence_top_k=evidence_top_k,
     )
 
 
@@ -390,7 +430,7 @@ def _build_llm_error_result(
     pack: str,
     fingerprint: str,
     error: str,
-    evidence: list[str] | None = None,
+    evidence_bundle: list[EvidenceSource] | None = None,
 ) -> TariffVerificationResult:
     iteration = TariffVerifyIteration(
         i=1,
@@ -422,7 +462,7 @@ def _build_llm_error_result(
         None,
         [],
         {},
-        evidence,
+        evidence_bundle,
     )
     proof_id = sha256_canonical_json(payload)
     return TariffVerificationResult(
@@ -437,6 +477,9 @@ def _build_llm_error_result(
         tariff_dossier=None,
         critic_outputs=[],
         model_routing={},
+        evidence_bundle=payload.get("evidence_bundle"),
+        citation_gate_result=payload.get("citation_gate_result"),
+        citations=None,
     )
 
 
@@ -600,10 +643,12 @@ def _evaluate_iteration(
     previous_dossier: TariffDossier | None,
     threshold: float,
     min_mutations: int,
+    evidence_bundle: list[EvidenceSource],
 ) -> tuple[TariffVerifyIteration, list[int], str]:
     rejected_because: list[str] = []
     gate = _gate_dossier(dossier, min_mutations)
     sequence_ok, sequence_violations = validate_gri_sequence(dossier.gri_trace)
+    citation_gate = run_citation_gate(dossier, evidence_bundle)
     conflicts = sorted(set(critique.conflicts + gate.conflicts))
     unsupported = sorted(set(critique.unsupported + gate.unsupported))
     missing = sorted(set(critique.missing + gate.missing))
@@ -611,6 +656,9 @@ def _evaluate_iteration(
     if not sequence_ok:
         rejected_because.append("gri_sequence_violation")
         conflicts.extend(sequence_violations)
+    if not citation_gate.ok:
+        rejected_because.append("citation_gate_failed")
+        missing.extend(citation_gate.violations)
 
     baseline_duty = dossier.baseline.duty_rate_pct
     optimized_duty = dossier.optimized.duty_rate_pct
@@ -653,6 +701,7 @@ def _evaluate_iteration(
         critique,
         mismatch_report,
         _build_what_if_feedback(dossier, rejected_because),
+        citation_gate.revision_guidance,
     )
     answer_delta_summary = _summarize_dossier_delta(previous_dossier, dossier)
     conflicts = _cap_list(conflicts, 50)
@@ -680,6 +729,7 @@ def _evaluate_iteration(
             if gate.essential_character_score is not None
             else None
         ),
+        citation_gate_result=citation_gate.model_dump(),
     )
     return iteration, hdc_bundle, mismatch_report
 
@@ -915,6 +965,7 @@ def _build_feedback_text(
     critique: TariffCritique,
     mismatch_report: str,
     what_if_feedback: str | None = None,
+    citation_guidance: str | None = None,
 ) -> str:
     parts = [mismatch_report]
     if critique.missing:
@@ -927,6 +978,8 @@ def _build_feedback_text(
         parts.append("Suggested fixes: " + "; ".join(critique.suggested_fixes))
     if what_if_feedback:
         parts.append(what_if_feedback)
+    if citation_guidance:
+        parts.append(citation_guidance)
     if rejected_because:
         parts.append("Rejected: " + ", ".join(rejected_because))
     return "\n".join(parts)
@@ -1015,15 +1068,27 @@ def _build_proof_payload(
     dossier: TariffDossier | None,
     critics: list[TariffCritique],
     model_routing: dict[str, Any],
-    evidence: list[str] | None,
+    evidence_bundle: list[EvidenceSource] | None,
 ) -> dict[str, Any]:
+    evidence_payload = [source.model_dump() for source in evidence_bundle or []]
+    citation_gate_result = iterations[-1].citation_gate_result if iterations else None
+    citations = collect_citations(dossier) if dossier else []
     status = "verified" if iterations and iterations[-1].accepted else "failed"
     return {
         "status": status,
         "pack": pack,
         "pack_fingerprint": fingerprint,
         "evidence_manifest_hash": sha256_canonical_json(
-            {"input": input_text, "evidence": evidence or []}
+            {
+                "input": input_text,
+                "evidence": [
+                    {
+                        "source_id": source.source_id,
+                        "text_hash": sha256_canonical_json(source.text),
+                    }
+                    for source in evidence_bundle or []
+                ],
+            }
         ),
         "final_answer": final_answer,
         "iterations": [item.model_dump() for item in iterations],
@@ -1031,6 +1096,9 @@ def _build_proof_payload(
         "tariff_dossier": dossier.model_dump() if dossier else None,
         "critic_outputs": [item.model_dump() for item in critics],
         "model_routing": model_routing,
+        "evidence_bundle": evidence_payload,
+        "citations": [citation.model_dump() for citation in citations],
+        "citation_gate_result": citation_gate_result,
     }
 
 
@@ -1086,6 +1154,33 @@ def _load_fixture() -> dict[str, Any] | None:
     if not path.exists():
         return None
     return orjson.loads(path.read_bytes())
+
+
+def _build_evidence_bundle(
+    input_text: str,
+    options: TariffOptions,
+) -> list[EvidenceSource]:
+    store = TariffEvidenceStore()
+    retriever = TariffEvidenceRetriever(store)
+    bundle = retriever.retrieve(
+        input_text,
+        candidate_chapters=options.candidate_chapters,
+        top_k=options.evidence_top_k,
+    )
+    if options.evidence:
+        user_sources = [
+            EvidenceSource(
+                source_id=f"USER.{idx + 1}",
+                source_type="user",
+                title=f"User evidence {idx + 1}",
+                effective_date="user-provided",
+                url=None,
+                text=text,
+            )
+            for idx, text in enumerate(options.evidence)
+        ]
+        bundle.extend(user_sources)
+    return bundle
 
 
 register_pack("tariff", lambda context: TariffPack(context))

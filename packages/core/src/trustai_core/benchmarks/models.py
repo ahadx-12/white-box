@@ -56,6 +56,8 @@ class CaseScore(BaseModel):
     no_savings_ok: bool | None = None
     process_bonus: float = 0.0
     penalties: list[str] = Field(default_factory=list)
+    citations_present: bool | None = None
+    citations_valid: bool | None = None
 
 
 class CaseResult(BaseModel):
