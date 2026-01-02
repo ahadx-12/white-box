@@ -1,0 +1,35 @@
+{
+  "id": "tariff_adv_05_conflicting_origin",
+  "pack_id": "tariff",
+  "case_type": "adversarial",
+  "difficulty": "medium",
+  "input": {
+    "input": "Classify footwear with conflicting origin claims and ambiguous material mix.",
+    "options": {
+      "max_iters": 4
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6402.99"
+    ],
+    "allowed_hts": [
+      "6404.11.90"
+    ],
+    "must_not_hts": [
+      "6403.59.0000"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "adversarial",
+      "origin",
+      "chapter_64"
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "id": "tariff_nos_01_no_levers",
+  "pack_id": "tariff",
+  "case_type": "no_savings",
+  "difficulty": "medium",
+  "input": {
+    "input": "Assess tariff classification for footwear where no lawful duty savings levers exist.",
+    "options": {
+      "max_iters": 4
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6404.11.90"
+    ],
+    "allowed_hts": [
+      "6402.99"
+    ],
+    "must_not_hts": [
+      "9999.99.9999"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": true,
+    "duty_delta_range": [
+      -0.01,
+      0.01
+    ]
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "no_savings",
+      "chapter_64",
+      "footwear"
+    ]
+  }
+}

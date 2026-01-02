@@ -1,0 +1,35 @@
+{
+  "id": "tariff_pos_01_athletic_sneaker",
+  "pack_id": "tariff",
+  "case_type": "positive",
+  "difficulty": "easy",
+  "input": {
+    "input": "Classify an athletic sneaker with a textile upper and rubber outsole. Provide baseline and optimized tariff analysis.",
+    "options": {
+      "max_iters": 4
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6402.99"
+    ],
+    "allowed_hts": [
+      "6404.11.90"
+    ],
+    "must_not_hts": [
+      "9999.99.9999"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "chapter_64",
+      "footwear",
+      "gri_3b"
+    ]
+  }
+}

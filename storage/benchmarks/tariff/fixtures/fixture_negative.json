@@ -1,0 +1,134 @@
+{
+  "critics": [
+    {
+      "conflicts": [],
+      "missing": [
+        "Missing core classification inputs."
+      ],
+      "revised_questions_for_user": [
+        "Provide materials and component breakdown."
+      ],
+      "suggested_fixes": [
+        "Clarify product composition before classification."
+      ],
+      "unsupported": []
+    }
+  ],
+  "proposals": [
+    {
+      "assumptions": [
+        "Insufficient detail to classify.",
+        "No binding rulings provided."
+      ],
+      "baseline": {
+        "confidence": 0.3,
+        "duty_basis": "ad valorem",
+        "duty_rate_pct": null,
+        "hts_code": null,
+        "rationale": "Insufficient information to determine HTS."
+      },
+      "best_option_id": null,
+      "chosen_mutation": null,
+      "citations": [],
+      "compliance_notes": [
+        "Cannot recommend lawful tariff engineering without baseline classification."
+      ],
+      "composition_table": [
+        {
+          "name": "unknown material",
+          "pct": null
+        }
+      ],
+      "essential_character": {
+        "basis": "function",
+        "citations": [],
+        "conclusion": "Essential character cannot be determined without material data.",
+        "justification": "Missing component breakdown.",
+        "weights": {
+          "unknown": 1.0
+        }
+      },
+      "gri_trace": {
+        "final_step_used": "GRI_1",
+        "sequence_ok": true,
+        "step_vector": [
+          true,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "steps": [
+          {
+            "applied": true,
+            "citations": [],
+            "reasoning": "Cannot proceed without sufficient detail.",
+            "rejected_because": [
+              "Missing product description"
+            ],
+            "step": "GRI_1"
+          },
+          {
+            "applied": false,
+            "citations": [],
+            "reasoning": "Not applicable without baseline.",
+            "rejected_because": [
+              "Missing baseline details"
+            ],
+            "step": "GRI_2"
+          },
+          {
+            "applied": false,
+            "citations": [],
+            "reasoning": "Not applicable without baseline.",
+            "rejected_because": [
+              "Missing baseline details"
+            ],
+            "step": "GRI_3"
+          },
+          {
+            "applied": false,
+            "citations": [],
+            "reasoning": "Not applicable without baseline.",
+            "rejected_because": [
+              "Missing baseline details"
+            ],
+            "step": "GRI_4"
+          },
+          {
+            "applied": false,
+            "citations": [],
+            "reasoning": "Not applicable without baseline.",
+            "rejected_because": [
+              "Missing baseline details"
+            ],
+            "step": "GRI_5"
+          },
+          {
+            "applied": false,
+            "citations": [],
+            "reasoning": "Not applicable without baseline.",
+            "rejected_because": [
+              "Missing baseline details"
+            ],
+            "step": "GRI_6"
+          }
+        ],
+        "violations": []
+      },
+      "mutations": [],
+      "optimized": {
+        "duty_rate_pct": null,
+        "estimated_savings_per_unit": null,
+        "hts_code": null,
+        "rationale": "Cannot reduce duty without missing information.",
+        "risk_flags": []
+      },
+      "product_summary": "Unclassified product due to missing facts.",
+      "questions_for_user": [],
+      "savings_estimate": null,
+      "what_if_candidates": []
+    }
+  ]
+}

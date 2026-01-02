@@ -1,0 +1,38 @@
+{
+  "id": "tariff_nos_02_stable_duty",
+  "pack_id": "tariff",
+  "case_type": "no_savings",
+  "difficulty": "easy",
+  "input": {
+    "input": "Provide tariff classification where duty rate cannot be reduced lawfully.",
+    "options": {
+      "max_iters": 4
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6404.11.90"
+    ],
+    "allowed_hts": [
+      "6402.99"
+    ],
+    "must_not_hts": [
+      "6403.99.0000"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": true,
+    "duty_delta_range": [
+      -0.01,
+      0.01
+    ]
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "no_savings",
+      "duty_stable",
+      "chapter_64"
+    ]
+  }
+}

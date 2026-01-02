@@ -1,0 +1,30 @@
+{
+  "id": "tariff_neg_01_missing_materials",
+  "pack_id": "tariff",
+  "case_type": "negative",
+  "difficulty": "easy",
+  "input": {
+    "input": "Classify a product with no material composition or use details provided.",
+    "options": {
+      "max_iters": 3
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6402.99"
+    ],
+    "allowed_hts": [],
+    "must_not_hts": [],
+    "expected_accept": false,
+    "expected_refusal_category": "insufficient_info",
+    "no_savings_expected": false,
+    "duty_delta_range": null
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "insufficient_info",
+      "negative"
+    ]
+  }
+}
