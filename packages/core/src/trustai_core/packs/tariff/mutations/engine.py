@@ -143,8 +143,8 @@ def _estimate_savings(
     dossier: TariffDossier,
     sequence: Any,
 ) -> LeverSavingsEstimate:
-    baseline_rate = dossier.baseline.duty_rate_pct
-    optimized_rate = dossier.optimized.duty_rate_pct
+    baseline_rate = _resolve_duty_rate(dossier.baseline)
+    optimized_rate = _resolve_duty_rate(dossier.optimized)
     duty_savings = None
     if baseline_rate is not None and optimized_rate is not None:
         duty_savings = round(max(0.0, baseline_rate - optimized_rate), 4)
@@ -183,6 +183,18 @@ def _plausibility_penalty(candidate: MutationCandidate) -> float:
     if not penalties:
         return 0.0
     return round(sum(penalties) / len(penalties), 4)
+
+
+def _resolve_duty_rate(duty_summary: object) -> float | None:
+    if hasattr(duty_summary, "duty_breakdown"):
+        breakdown = getattr(duty_summary, "duty_breakdown")
+        if breakdown is not None and getattr(breakdown, "total_rate_pct", None) is not None:
+            return float(breakdown.total_rate_pct)
+    if hasattr(duty_summary, "duty_rate_pct"):
+        value = getattr(duty_summary, "duty_rate_pct")
+        if value is not None:
+            return float(value)
+    return None
 
 
 def _sequence_plausibility_penalty(sequence: list[MutationCandidate]) -> float:
@@ -238,7 +250,7 @@ def _build_baseline_summary(
         summary["product_summary"] = product_dossier.product_summary
     if tariff_dossier:
         summary["hts_code"] = tariff_dossier.baseline.hts_code
-        summary["duty_rate_pct"] = tariff_dossier.baseline.duty_rate_pct
+        summary["duty_rate_pct"] = _resolve_duty_rate(tariff_dossier.baseline)
     return summary
 
 
@@ -249,7 +261,7 @@ def _build_mutated_summary(
     summary: dict[str, Any] = {
         "product_summary": product_dossier.product_summary,
         "hts_code": tariff_dossier.optimized.hts_code or tariff_dossier.baseline.hts_code,
-        "duty_rate_pct": tariff_dossier.optimized.duty_rate_pct,
+        "duty_rate_pct": _resolve_duty_rate(tariff_dossier.optimized),
     }
     return summary
 

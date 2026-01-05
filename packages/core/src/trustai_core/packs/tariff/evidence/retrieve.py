@@ -81,13 +81,22 @@ def _collect_forced_sources(
     chapters = set(heading_chapters)
     chapters.update(candidate_chapters)
     sections = {SECTION_BY_CHAPTER.get(chapter) for chapter in chapters}
+    section_prefixes = {section for section in sections if section}
+    section_prefixes.update(
+        {
+            f"{prefix}.{section}"
+            for prefix in ("US", "CA")
+            for section in sections
+            if section
+        }
+    )
     for source in sources:
         chapter = _extract_chapter(source.source_id)
         if source.source_type in {"heading", "subheading"} and chapter in chapters:
             forced[source.source_id] = source
         if source.source_type == "chapter_note" and chapter in chapters:
             forced[source.source_id] = source
-        if source.source_type == "section_note" and source.source_id.startswith(tuple(section for section in sections if section)):
+        if source.source_type == "section_note" and source.source_id.startswith(tuple(section_prefixes)):
             forced[source.source_id] = source
     return forced
 
@@ -102,10 +111,13 @@ def _tokenize(text: str) -> set[str]:
 
 
 def _extract_chapter(source_id: str) -> str | None:
-    match = re.match(r"HTS\.(\d{2})", source_id)
+    match = re.match(r"(?:[A-Z]{2}\.)?HTS\.(\d{2})", source_id)
     if match:
         return match.group(1)
-    match = re.match(r"CH(\d{2})\.", source_id)
+    match = re.match(r"(?:[A-Z]{2}\.)?TAR\.(\d{2})", source_id)
+    if match:
+        return match.group(1)
+    match = re.match(r"(?:[A-Z]{2}\.)?CH(\d{2})\.", source_id)
     if match:
         return match.group(1)
     return None

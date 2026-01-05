@@ -24,6 +24,8 @@ class ExpectedSpec(BaseModel):
     expected_refusal_category: RefusalCategory | None = None
     no_savings_expected: bool = False
     duty_delta_range: tuple[float, float] | None = None
+    expected_duty_total_rate_pct: float | None = None
+    expected_duty_delta_direction: Literal["decrease", "increase", "flat"] | None = None
     lever_found_expected: bool | None = None
     lever_count_min: int | None = None
     lever_compliance_ok: bool | None = None
@@ -63,6 +65,8 @@ class CaseScore(BaseModel):
     refusal_category_expected: RefusalCategory | None = None
     refusal_category_actual: RefusalCategory | None = None
     duty_delta: float | None = None
+    duty_total_rate_match: bool | None = None
+    duty_delta_direction: str | None = None
     no_savings_ok: bool | None = None
     process_bonus: float = 0.0
     penalties: list[str] = Field(default_factory=list)

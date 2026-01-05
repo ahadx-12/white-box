@@ -24,6 +24,8 @@ def _sample_case_payload(case_id: str) -> dict:
             "expected_refusal_category": None,
             "no_savings_expected": False,
             "duty_delta_range": None,
+            "expected_duty_total_rate_pct": None,
+            "expected_duty_delta_direction": None,
             "lever_found_expected": None,
             "lever_count_min": None,
             "lever_compliance_ok": None,
@@ -64,8 +66,17 @@ def _fake_result(
             }
         ],
         "tariff_dossier": {
-            "baseline": {"hts_code": "6404.11.90", "duty_rate_pct": 20.0},
-            "optimized": {"hts_code": hts_code, "duty_rate_pct": 5.0, "rationale": "ok"},
+            "baseline": {
+                "hts_code": "6404.11.90",
+                "duty_rate_pct": 20.0,
+                "duty_breakdown": {"total_rate_pct": 20.0},
+            },
+            "optimized": {
+                "hts_code": hts_code,
+                "duty_rate_pct": 5.0,
+                "duty_breakdown": {"total_rate_pct": 5.0},
+                "rationale": "ok",
+            },
             "mutations": [],
             "what_if_candidates": [],
             "gri_trace": {"sequence_ok": True, "steps": []},

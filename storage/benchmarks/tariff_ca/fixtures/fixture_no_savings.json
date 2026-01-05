@@ -1,0 +1,210 @@
+{
+  "critics": [
+    {
+      "conflicts": [],
+      "missing": [],
+      "revised_questions_for_user": [],
+      "suggested_fixes": [],
+      "unsupported": []
+    }
+  ],
+  "proposals": [
+    {
+      "assumptions": [
+        "Classification based on textile upper and rubber outsole.",
+        "No preferential trade program claimed."
+      ],
+      "baseline": {
+        "confidence": 0.6,
+        "duty_basis": "ad valorem",
+        "duty_rate_pct": 0.0,
+        "hts_code": "6404.11.90",
+        "rationale": "Footwear with textile upper, rubber/plastics outsole."
+      },
+      "best_option_id": "m1",
+      "chosen_mutation": "m1",
+      "citations": [
+        {
+          "claim_type": "hts_classification",
+          "claim": "Baseline HTS aligned with textile-upper footwear.",
+          "source_id": "CA.TAR.6404",
+          "quote": "Footwear with outer soles of rubber or plastics, leather or composition leather and uppers of textile materials."
+        }
+      ],
+      "compliance_notes": [
+        "No lawful redesign options identified for duty reduction."
+      ],
+      "composition_table": [
+        {
+          "name": "textile upper",
+          "pct": 60.0
+        },
+        {
+          "name": "rubber outsole",
+          "pct": 40.0
+        }
+      ],
+      "essential_character": {
+        "basis": "value",
+        "citations": [
+          {
+            "claim_type": "essential_character",
+            "claim": "Essential character follows GRI 3(b).",
+            "source_id": "CA.GRI.3",
+            "quote": "material or component which gives them their essential character."
+          }
+        ],
+        "conclusion": "Textile upper imparts essential character under GRI 3(b).",
+        "justification": "Upper material dominates value and surface area.",
+        "weights": {
+          "rubber": 40.0,
+          "textile": 60.0
+        }
+      },
+      "gri_trace": {
+        "final_step_used": "GRI_3",
+        "sequence_ok": true,
+        "step_vector": [
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        "steps": [
+          {
+            "applied": false,
+            "citations": [
+              {
+                "claim_type": "gri_application",
+                "claim": "GRI_1 applied or rejected.",
+                "source_id": "CA.GRI.1",
+                "quote": "classification shall be determined according to the terms of the headings and any relative section or chapter notes."
+              }
+            ],
+            "reasoning": "Heading text alone does not resolve classification.",
+            "rejected_because": [
+              "Multiple headings plausible"
+            ],
+            "step": "GRI_1"
+          },
+          {
+            "applied": false,
+            "citations": [
+              {
+                "claim_type": "gri_application",
+                "claim": "GRI_2 applied or rejected.",
+                "source_id": "CA.GRI.2",
+                "quote": "reference to that article incomplete or unfinished"
+              }
+            ],
+            "reasoning": "Incomplete or unassembled goods rule not applicable.",
+            "rejected_because": [
+              "Not incomplete or unfinished"
+            ],
+            "step": "GRI_2"
+          },
+          {
+            "applied": true,
+            "citations": [
+              {
+                "claim_type": "gri_application",
+                "claim": "GRI_3 applied or rejected.",
+                "source_id": "CA.GRI.3",
+                "quote": "material or component which gives them their essential character."
+              }
+            ],
+            "reasoning": "Mixture/set classification requires essential character analysis under 3(b).",
+            "rejected_because": [],
+            "step": "GRI_3"
+          },
+          {
+            "applied": false,
+            "citations": [
+              {
+                "claim_type": "gri_application",
+                "claim": "GRI_4 applied or rejected.",
+                "source_id": "CA.GRI.4",
+                "quote": "heading appropriate to the goods to which they are most akin."
+              }
+            ],
+            "reasoning": "Earlier step resolved classification.",
+            "rejected_because": [
+              "GRI_3 applied"
+            ],
+            "step": "GRI_4"
+          },
+          {
+            "applied": false,
+            "citations": [
+              {
+                "claim_type": "gri_application",
+                "claim": "GRI_5 applied or rejected.",
+                "source_id": "CA.GRI.5",
+                "quote": "packing materials and packing containers"
+              }
+            ],
+            "reasoning": "Packaging rule not needed after GRI_3.",
+            "rejected_because": [
+              "GRI_3 applied"
+            ],
+            "step": "GRI_5"
+          },
+          {
+            "applied": false,
+            "citations": [
+              {
+                "claim_type": "gri_application",
+                "claim": "GRI_6 applied or rejected.",
+                "source_id": "CA.GRI.6",
+                "quote": "classification of goods in the subheadings of a heading shall be determined according to the terms of those subheadings"
+              }
+            ],
+            "reasoning": "Subheading selection not required after GRI_3 resolved heading.",
+            "rejected_because": [
+              "GRI_3 applied"
+            ],
+            "step": "GRI_6"
+          }
+        ],
+        "violations": []
+      },
+      "mutations": [
+        {
+          "category": "process",
+          "change": "Document current design and confirm no lawful reclassification levers exist.",
+          "constraints": [
+            "Maintain audit trail"
+          ],
+          "expected_duty_rate_pct": null,
+          "expected_effect": "unknown",
+          "expected_hts_change": null,
+          "expected_savings_note": "No savings expected.",
+          "id": "m1",
+          "legal_rationale": "Documentation supports defensible classification.",
+          "rationale": "No lawful redesign options identified.",
+          "required_evidence": [
+            "Documentation package"
+          ],
+          "risk_level": "low",
+          "title": "Confirm no-savings outcome"
+        }
+      ],
+      "optimized": {
+        "duty_rate_pct": 0.0,
+        "estimated_savings_per_unit": null,
+        "hts_code": "6404.11.90",
+        "rationale": "Cannot reduce duty further under lawful options.",
+        "risk_flags": []
+      },
+      "product_summary": "Athletic sneaker with textile upper and rubber outsole.",
+      "questions_for_user": [
+        "Confirm external surface area breakdown by material.",
+        "Provide component-level cost breakdown."
+      ],
+      "savings_estimate": null,
+      "what_if_candidates": []
+    }
+  ]
+}

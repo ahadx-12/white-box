@@ -5,6 +5,16 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from trustai_core.duty.models import DutyBreakdown, DutyFlow
+
+
+class TariffClassification(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    line_id: str | None = None
+    system: Literal["HTSUS", "CT"] | None = None
+    description: str | None = None
+
 
 class TariffBaseline(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -14,6 +24,8 @@ class TariffBaseline(BaseModel):
     duty_basis: str
     rationale: str
     confidence: float = Field(ge=0.0, le=1.0)
+    classification: TariffClassification | None = None
+    duty_breakdown: DutyBreakdown | None = None
 
 
 class TariffOptimized(BaseModel):
@@ -24,6 +36,8 @@ class TariffOptimized(BaseModel):
     estimated_savings_per_unit: float | None = None
     rationale: str
     risk_flags: list[str]
+    classification: TariffClassification | None = None
+    duty_breakdown: DutyBreakdown | None = None
 
 
 class GriStep(str, Enum):
@@ -194,3 +208,4 @@ class TariffVerificationResult(BaseModel):
     citation_gate_result: dict[str, Any] | None = None
     citations: list[TariffCitation] | None = None
     lever_proof: dict[str, Any] | None = None
+    flow: DutyFlow | None = None

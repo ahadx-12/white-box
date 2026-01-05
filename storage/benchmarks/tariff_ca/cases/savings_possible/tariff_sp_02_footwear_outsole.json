@@ -1,0 +1,40 @@
+{
+  "id": "tariff_sp_02_footwear_outsole",
+  "pack_id": "tariff_ca",
+  "case_type": "savings_possible",
+  "difficulty": "medium",
+  "input": {
+    "input": "{\"importing_country\": \"CA\", \"exporting_country\": \"CN\", \"origin_country\": \"CN\", \"preference_program\": null, \"product_dossier\": {\"product_summary\": \"{\\\"product_dossier\\\": {\\\"product_id\\\": \\\"FW-002\\\", \\\"product_summary\\\": \\\"Casual footwear with mixed outsole materials.\\\", \\\"upper_materials\\\": [{\\\"material\\\": \\\"textile\\\", \\\"pct\\\": 55.0}, {\\\"material\\\": \\\"synthetic\\\", \\\"pct\\\": 45.0}], \\\"outsole_materials\\\": [{\\\"material\\\": \\\"rubber\\\", \\\"pct\\\": 60.0}, {\\\"material\\\": \\\"plastic\\\", \\\"pct\\\": 40.0}], \\\"sold_as_set\\\": false, \\\"has_metal_toe\\\": false, \\\"safety_footwear\\\": false}}\"}}",
+    "options": {
+      "max_iters": 2
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6402.99"
+    ],
+    "allowed_hts": [
+      "6404.11.90"
+    ],
+    "must_not_hts": [
+      "9999.99.9999"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null,
+    "lever_found_expected": true,
+    "lever_count_min": 1,
+    "lever_compliance_ok": true,
+    "expected_duty_total_rate_pct": 18.0,
+    "expected_duty_delta_direction": "decrease"
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "savings_possible",
+      "chapter_64",
+      "footwear"
+    ]
+  }
+}
