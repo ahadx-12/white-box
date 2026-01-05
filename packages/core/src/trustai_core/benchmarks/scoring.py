@@ -61,6 +61,28 @@ def _extract_citations(payload: dict[str, Any]) -> list[dict[str, Any]]:
     return list(dossier.get("citations") or [])
 
 
+def _extract_lever_proof(payload: dict[str, Any]) -> dict[str, Any] | None:
+    if payload.get("lever_proof"):
+        return payload.get("lever_proof")
+    proof = payload.get("proof") or {}
+    return proof.get("lever_proof")
+
+
+def _extract_lever_stats(payload: dict[str, Any]) -> tuple[int, bool | None]:
+    lever_proof = _extract_lever_proof(payload) or {}
+    selected = lever_proof.get("selected_levers") or []
+    compliance_ok = None
+    if selected:
+        compliance_ok = True
+        for lever in selected:
+            gate_results = lever.get("gate_results") or {}
+            plausibility = gate_results.get("plausibility") or {}
+            if not plausibility.get("ok", False):
+                compliance_ok = False
+                break
+    return len(selected), compliance_ok
+
+
 def _extract_final_hts(dossier: dict[str, Any] | None) -> str | None:
     if not dossier:
         return None
@@ -212,6 +234,7 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
         bool(citation_gate.get("ok")) if citation_gate else None
     )
     grounding_enabled = citations_valid is not None
+    lever_count, lever_compliance_ok = _extract_lever_stats(payload)
 
     penalties: list[str] = []
     match_level: str | None = None
@@ -261,6 +284,19 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
                 if not (low <= duty_delta <= high):
                     penalties.append("duty_delta_out_of_range")
                     score -= DUTY_DELTA_PENALTY
+            if case.expected.lever_found_expected is not None:
+                if case.expected.lever_found_expected and lever_count < 1:
+                    penalties.append("lever_missing")
+                    score = 0.0
+                if not case.expected.lever_found_expected and lever_count > 0:
+                    penalties.append("unexpected_lever")
+                    score = 0.0
+            if case.expected.lever_count_min is not None and lever_count < case.expected.lever_count_min:
+                penalties.append("lever_count_below_min")
+                score = 0.0
+            if case.expected.lever_compliance_ok and lever_compliance_ok is False:
+                penalties.append("lever_compliance_failed")
+                score = 0.0
 
         score = _clamp(score + process_bonus)
     else:
@@ -297,4 +333,6 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
         penalties=penalties,
         citations_present=citations_present if grounding_enabled else None,
         citations_valid=citations_valid if grounding_enabled else None,
+        lever_count=lever_count if case.expected.lever_found_expected is not None else None,
+        lever_compliance_ok=lever_compliance_ok if case.expected.lever_found_expected else None,
     )

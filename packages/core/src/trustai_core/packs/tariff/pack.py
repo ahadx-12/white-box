@@ -27,6 +27,7 @@ from trustai_core.packs.tariff.hdc import (
     normalize_component_name,
     tariff_mutex_sets,
 )
+from trustai_core.packs.tariff.gri import validate_gri_sequence
 from trustai_core.packs.tariff.models import (
     GriStep,
     GriTrace,
@@ -36,6 +37,7 @@ from trustai_core.packs.tariff.models import (
     TariffVerificationResult,
     TariffVerifyIteration,
 )
+from trustai_core.packs.tariff.mutations.engine import build_lever_proof, parse_product_dossier
 from trustai_core.packs.tariff.prompts import (
     build_tariff_critic_prompt,
     build_tariff_proposal_prompt,
@@ -65,6 +67,7 @@ class TariffOptions:
     evidence: list[str] | None = None
     candidate_chapters: list[str] | None = None
     evidence_top_k: int = 10
+    lever_top_k: int = 3
 
 
 class TariffPack:
@@ -79,6 +82,7 @@ class TariffPack:
     async def run(self, input_text: str, options: dict[str, object] | None) -> TariffVerificationResult:
         resolved_options = _resolve_options(options)
         evidence_bundle = _build_evidence_bundle(input_text, resolved_options)
+        product_dossier = parse_product_dossier(input_text)
         if self._context.llm_mode != "live":
             fixture = _load_fixture()
             if fixture:
@@ -174,6 +178,15 @@ class TariffPack:
 
         final_answer = _format_tariff_report(dossier) if dossier else None
         explain = _build_explain(iterations)
+        evidence_payload = [source.model_dump() for source in evidence_bundle or []]
+        lever_proof = build_lever_proof(
+            product_dossier,
+            dossier,
+            evidence_bundle,
+            evidence_payload,
+            top_k=resolved_options.lever_top_k,
+        )
+        lever_payload = lever_proof.model_dump(by_alias=True)
         proof_payload = _build_proof_payload(
             input_text,
             self.name,
@@ -186,6 +199,7 @@ class TariffPack:
             router.model_routing,
             evidence_bundle,
             candidate_chapters,
+            lever_payload,
         )
         proof_id = sha256_canonical_json(proof_payload)
         citations = collect_citations(dossier) if dossier else []
@@ -208,6 +222,7 @@ class TariffPack:
             evidence_bundle=proof_payload.get("evidence_bundle"),
             citation_gate_result=citation_gate_result,
             citations=citations or None,
+            lever_proof=lever_payload,
         )
 
     async def _run_with_fixture(
@@ -217,6 +232,7 @@ class TariffPack:
         fixture: dict[str, Any],
         evidence_bundle: list[EvidenceSource],
     ) -> TariffVerificationResult:
+        product_dossier = parse_product_dossier(input_text)
         proposals = fixture.get("proposals") or []
         critiques = fixture.get("critics") or []
         if not proposals or not critiques:
@@ -269,6 +285,15 @@ class TariffPack:
             "proposer": {"provider": "fixture", "model": "fixture"},
             "critic": {"provider": "fixture", "model": "fixture"},
         }
+        evidence_payload = [source.model_dump() for source in evidence_bundle or []]
+        lever_proof = build_lever_proof(
+            product_dossier,
+            dossier,
+            evidence_bundle,
+            evidence_payload,
+            top_k=options.lever_top_k,
+        )
+        lever_payload = lever_proof.model_dump(by_alias=True)
         proof_payload = _build_proof_payload(
             input_text,
             self.name,
@@ -281,6 +306,7 @@ class TariffPack:
             model_routing,
             evidence_bundle,
             candidate_chapters,
+            lever_payload,
         )
         proof_id = sha256_canonical_json(proof_payload)
         citations = collect_citations(dossier) if dossier else []
@@ -303,6 +329,7 @@ class TariffPack:
             evidence_bundle=proof_payload.get("evidence_bundle"),
             citation_gate_result=citation_gate_result,
             citations=citations or None,
+            lever_proof=lever_payload,
         )
 
 
@@ -379,6 +406,7 @@ def _resolve_options(options: dict[str, object] | None) -> TariffOptions:
     elif isinstance(candidate_value, str):
         candidate_chapters = [candidate_value]
     evidence_top_k = int(options.get("evidence_top_k") or 10)
+    lever_top_k = int(options.get("lever_top_k") or 3)
     return TariffOptions(
         max_iters=max_iters,
         threshold=threshold,
@@ -386,6 +414,7 @@ def _resolve_options(options: dict[str, object] | None) -> TariffOptions:
         evidence=evidence,
         candidate_chapters=candidate_chapters,
         evidence_top_k=evidence_top_k,
+        lever_top_k=lever_top_k,
     )
 
 
@@ -485,6 +514,7 @@ def _build_llm_error_result(
         {},
         evidence_bundle,
         [],
+        None,
     )
     proof_id = sha256_canonical_json(payload)
     return TariffVerificationResult(
@@ -549,49 +579,6 @@ ILLEGAL_EVASION_TERMS = {
     "bribe",
 }
 
-GRI_ORDER = [
-    GriStep.GRI_1,
-    GriStep.GRI_2,
-    GriStep.GRI_3,
-    GriStep.GRI_4,
-    GriStep.GRI_5,
-    GriStep.GRI_6,
-]
-
-
-def validate_gri_sequence(gri_trace: GriTrace | None) -> tuple[bool, list[str]]:
-    if gri_trace is None:
-        return False, ["missing_gri_trace"]
-    violations: list[str] = []
-    if [step.step for step in gri_trace.steps] != GRI_ORDER:
-        violations.append("GRI steps must be ordered GRI_1 through GRI_6")
-    if gri_trace.step_vector and len(gri_trace.step_vector) != len(GRI_ORDER):
-        violations.append("Step vector must include 6 entries")
-    applied_indices = [i for i, step in enumerate(gri_trace.steps) if step.applied]
-    if applied_indices:
-        first_applied = applied_indices[0]
-        for idx in range(first_applied):
-            if gri_trace.steps[idx].applied:
-                violations.append(
-                    f"Sequence Violation: {gri_trace.steps[idx].step} applied before "
-                    f"{gri_trace.steps[first_applied].step}"
-                )
-            if not gri_trace.steps[idx].rejected_because:
-                violations.append(
-                    f"Sequence Violation: {gri_trace.steps[first_applied].step} used before "
-                    f"rejecting {gri_trace.steps[idx].step}"
-                )
-        for idx in range(first_applied + 1, len(gri_trace.steps)):
-            if gri_trace.steps[idx].applied:
-                violations.append(
-                    f"Sequence Violation: {gri_trace.steps[idx].step} applied after "
-                    f"{gri_trace.steps[first_applied].step}"
-                )
-    if gri_trace.step_vector:
-        applied_vector = [step.applied for step in gri_trace.steps]
-        if applied_vector != gri_trace.step_vector:
-            violations.append("Step vector does not match applied steps")
-    return (not violations), _cap_list(violations, 10)
 
 
 def generate_perturbations(
@@ -1101,6 +1088,7 @@ def _build_proof_payload(
     model_routing: dict[str, Any],
     evidence_bundle: list[EvidenceSource] | None,
     candidate_chapters: list[str],
+    lever_proof: dict[str, Any] | None,
 ) -> dict[str, Any]:
     evidence_payload = [source.model_dump() for source in evidence_bundle or []]
     citation_gate_result = iterations[-1].citation_gate_result if iterations else None
@@ -1137,6 +1125,7 @@ def _build_proof_payload(
         "citation_gate_result": citation_gate_result,
         "candidate_chapters": candidate_chapters,
         "candidate_chapter_evidence": candidate_chapter_evidence,
+        "lever_proof": lever_proof,
     }
 
 

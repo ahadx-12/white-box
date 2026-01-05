@@ -37,13 +37,19 @@ def _default_fixture_resolver(case: BenchmarkCase) -> Path | None:
         fixture_path = root / suite / "fixtures" / "fixture_missing_evidence.json"
         if fixture_path.exists():
             return fixture_path
+    if case.case_type == "no_savings":
+        fixture_path = root / suite / "fixtures" / "fixture_no_savings.json"
+        if fixture_path.exists():
+            return fixture_path
     fixture_map = {
         "positive": "fixture_positive.json",
         "negative": "fixture_negative.json",
         "adversarial": "fixture_positive.json",
         "no_savings": "fixture_no_savings.json",
+        "savings_possible": "fixture_positive.json",
     }
     tag_map = {
+        "chapter_64": "fixture_positive.json",
         "chapter_73": "fixture_ch73.json",
         "chapter_84": "fixture_ch84.json",
         "chapter_85": "fixture_ch85.json",

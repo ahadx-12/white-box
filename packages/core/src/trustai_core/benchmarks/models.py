@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-CaseType = Literal["positive", "negative", "adversarial", "no_savings"]
+CaseType = Literal["positive", "negative", "adversarial", "no_savings", "savings_possible"]
 Difficulty = Literal["easy", "medium", "hard", "expert"]
 RefusalCategory = Literal[
     "insufficient_info",
@@ -24,6 +24,9 @@ class ExpectedSpec(BaseModel):
     expected_refusal_category: RefusalCategory | None = None
     no_savings_expected: bool = False
     duty_delta_range: tuple[float, float] | None = None
+    lever_found_expected: bool | None = None
+    lever_count_min: int | None = None
+    lever_compliance_ok: bool | None = None
 
 
 class NotesSpec(BaseModel):
@@ -63,6 +66,8 @@ class CaseScore(BaseModel):
     penalties: list[str] = Field(default_factory=list)
     citations_present: bool | None = None
     citations_valid: bool | None = None
+    lever_count: int | None = None
+    lever_compliance_ok: bool | None = None
 
 
 class CaseResult(BaseModel):
