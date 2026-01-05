@@ -193,3 +193,4 @@ class TariffVerificationResult(BaseModel):
     evidence_bundle: list[dict[str, Any]] | None = None
     citation_gate_result: dict[str, Any] | None = None
     citations: list[TariffCitation] | None = None
+    lever_proof: dict[str, Any] | None = None

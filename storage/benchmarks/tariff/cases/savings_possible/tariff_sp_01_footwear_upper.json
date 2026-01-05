@@ -1,0 +1,38 @@
+{
+  "id": "tariff_sp_01_footwear_upper",
+  "pack_id": "tariff",
+  "case_type": "savings_possible",
+  "difficulty": "medium",
+  "input": {
+    "input": "{\"product_dossier\": {\"product_id\": \"FW-001\", \"product_summary\": \"Athletic footwear with textile upper and rubber outsole.\", \"upper_materials\": [{\"material\": \"textile\", \"pct\": 65.0}, {\"material\": \"leather\", \"pct\": 35.0}], \"outsole_materials\": [{\"material\": \"rubber\", \"pct\": 70.0}, {\"material\": \"textile\", \"pct\": 30.0}], \"sold_as_set\": false, \"has_metal_toe\": false, \"safety_footwear\": false}}",
+    "options": {
+      "max_iters": 2
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6402.99"
+    ],
+    "allowed_hts": [
+      "6404.11.90"
+    ],
+    "must_not_hts": [
+      "9999.99.9999"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null,
+    "lever_found_expected": true,
+    "lever_count_min": 1,
+    "lever_compliance_ok": true
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "savings_possible",
+      "chapter_64",
+      "footwear"
+    ]
+  }
+}

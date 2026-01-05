@@ -1,0 +1,36 @@
+{
+  "id": "tariff_sp_08_fastener_finish",
+  "pack_id": "tariff",
+  "case_type": "savings_possible",
+  "difficulty": "medium",
+  "input": {
+    "input": "{\"product_dossier\": {\"product_id\": \"FS-002\", \"product_summary\": \"Stainless steel fasteners, plain finish.\", \"material_grade\": \"stainless steel\", \"finish\": \"plain\", \"sold_as_set\": false}}",
+    "options": {
+      "max_iters": 2
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "7318.15"
+    ],
+    "allowed_hts": [],
+    "must_not_hts": [
+      "9999.99.9999"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null,
+    "lever_found_expected": true,
+    "lever_count_min": 1,
+    "lever_compliance_ok": true
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "savings_possible",
+      "chapter_73",
+      "fasteners"
+    ]
+  }
+}

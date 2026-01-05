@@ -24,6 +24,9 @@ def _sample_case_payload(case_id: str) -> dict:
             "expected_refusal_category": None,
             "no_savings_expected": False,
             "duty_delta_range": None,
+            "lever_found_expected": None,
+            "lever_count_min": None,
+            "lever_compliance_ok": None,
         },
         "notes": {"source": "synthetic", "tags": ["chapter_64"]},
     }
@@ -33,6 +36,8 @@ def _fake_result(
     hts_code: str,
     accepted: bool = True,
     rejected_because: list[str] | None = None,
+    lever_count: int = 0,
+    lever_compliance_ok: bool = True,
 ) -> dict:
     rejected = rejected_because or ([] if accepted else ["hts_or_questions_missing"])
     return {
@@ -61,6 +66,17 @@ def _fake_result(
             "mutations": [],
             "what_if_candidates": [],
             "gri_trace": {"sequence_ok": True, "steps": []},
+        },
+        "lever_proof": {
+            "baseline_summary": {},
+            "mutation_candidates": [],
+            "selected_levers": [
+                {
+                    "candidate": {"operator_id": f"op_{idx}", "label": "test", "category": "material"},
+                    "gate_results": {"plausibility": {"ok": lever_compliance_ok}},
+                }
+                for idx in range(lever_count)
+            ],
         },
     }
 
@@ -125,3 +141,15 @@ def test_missing_evidence_refusal_scoring() -> None:
     score = score_case(case, result)
     assert score.passed
     assert score.refusal_category_actual == "missing_evidence"
+
+
+def test_lever_expectation_scoring() -> None:
+    payload = _sample_case_payload("case_levers")
+    payload["expected"]["lever_found_expected"] = True
+    payload["expected"]["lever_count_min"] = 1
+    payload["expected"]["lever_compliance_ok"] = True
+    case = BenchmarkCase.model_validate(payload)
+    result = _fake_result("6402.99", accepted=True, lever_count=1, lever_compliance_ok=True)
+    score = score_case(case, result)
+    assert score.passed
+    assert score.lever_count == 1
