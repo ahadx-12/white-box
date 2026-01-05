@@ -1,1 +1,41 @@
-{}
+[
+  {
+    "layer_id": "US.301.CN.V1",
+    "type": "additional_duty",
+    "pct": 25.0,
+    "match": {
+      "origin_countries": ["CN"],
+      "line_prefixes": ["73", "85"]
+    },
+    "effective_from": "2019-09-01",
+    "effective_to": null,
+    "reason": "Section 301 additional duty (demo subset).",
+    "source_id": "US.LAW.301.DEMO"
+  },
+  {
+    "layer_id": "US.201.EU.V1",
+    "type": "additional_duty",
+    "pct": 7.5,
+    "match": {
+      "origin_countries": ["FR", "DE"],
+      "line_prefixes": ["84"]
+    },
+    "effective_from": "2020-01-01",
+    "effective_to": "2022-12-31",
+    "reason": "Section 201 safeguard duty (demo subset).",
+    "source_id": "US.LAW.201.DEMO"
+  },
+  {
+    "layer_id": "US.232.CN.V1",
+    "type": "additional_duty",
+    "pct": 10.0,
+    "match": {
+      "origin_countries": ["CN"],
+      "line_prefixes": ["84"]
+    },
+    "effective_from": "2024-01-01",
+    "effective_to": null,
+    "reason": "Section 232 additional duty (demo subset).",
+    "source_id": "US.LAW.232.DEMO"
+  }
+]

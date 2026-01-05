@@ -1,0 +1,23 @@
+[
+  {
+    "rule_id": "CUSMA.WHOLLY_OBTAINED.V1",
+    "program_id": "CUSMA",
+    "type": "wholly_obtained",
+    "requires": ["origin_country"],
+    "logic": {"origin_in": ["US", "CA", "MX"]},
+    "reason": "Wholly obtained in CUSMA territory (demo).",
+    "source_id": "CUSMA.CH4.DEMO"
+  },
+  {
+    "rule_id": "CUSMA.TARIFF_SHIFT.CH85.V1",
+    "program_id": "CUSMA",
+    "type": "tariff_shift",
+    "requires": ["bom.components[*].hs_chapter", "manufacturing.steps"],
+    "logic": {
+      "final_chapter_in": ["85"],
+      "non_originating_allowed_if": "all_non_originating_chapters_not_equal_final"
+    },
+    "reason": "Demo tariff shift for Chapter 85.",
+    "source_id": "CUSMA.ANNEX4B.DEMO"
+  }
+]
