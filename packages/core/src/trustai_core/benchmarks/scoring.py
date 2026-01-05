@@ -68,19 +68,27 @@ def _extract_lever_proof(payload: dict[str, Any]) -> dict[str, Any] | None:
     return proof.get("lever_proof")
 
 
-def _extract_lever_stats(payload: dict[str, Any]) -> tuple[int, bool | None]:
+def _extract_lever_stats(payload: dict[str, Any]) -> tuple[int, bool | None, int | None]:
     lever_proof = _extract_lever_proof(payload) or {}
     selected = lever_proof.get("selected_levers") or []
     compliance_ok = None
+    lever_steps = None
     if selected:
         compliance_ok = True
         for lever in selected:
             gate_results = lever.get("gate_results") or {}
             plausibility = gate_results.get("plausibility") or {}
-            if not plausibility.get("ok", False):
+            if isinstance(plausibility, list):
+                if any(not step.get("ok", False) for step in plausibility):
+                    compliance_ok = False
+                    break
+            elif not plausibility.get("ok", False):
                 compliance_ok = False
                 break
-    return len(selected), compliance_ok
+        first_sequence = selected[0].get("sequence") or []
+        if first_sequence:
+            lever_steps = len(first_sequence)
+    return len(selected), compliance_ok, lever_steps
 
 
 def _extract_final_hts(dossier: dict[str, Any] | None) -> str | None:
@@ -234,7 +242,7 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
         bool(citation_gate.get("ok")) if citation_gate else None
     )
     grounding_enabled = citations_valid is not None
-    lever_count, lever_compliance_ok = _extract_lever_stats(payload)
+    lever_count, lever_compliance_ok, lever_steps = _extract_lever_stats(payload)
 
     penalties: list[str] = []
     match_level: str | None = None
@@ -297,6 +305,14 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
             if case.expected.lever_compliance_ok and lever_compliance_ok is False:
                 penalties.append("lever_compliance_failed")
                 score = 0.0
+            if case.expected.expected_best_is_multi_step:
+                if lever_steps is None or lever_steps < 2:
+                    penalties.append("multi_step_lever_missing")
+                    score = 0.0
+            if case.expected.min_lever_steps is not None:
+                if lever_steps is None or lever_steps < case.expected.min_lever_steps:
+                    penalties.append("lever_steps_below_min")
+                    score = 0.0
 
         score = _clamp(score + process_bonus)
     else:
@@ -335,4 +351,5 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
         citations_valid=citations_valid if grounding_enabled else None,
         lever_count=lever_count if case.expected.lever_found_expected is not None else None,
         lever_compliance_ok=lever_compliance_ok if case.expected.lever_found_expected else None,
+        lever_steps=lever_steps if case.expected.lever_found_expected else None,
     )

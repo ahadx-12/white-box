@@ -27,6 +27,8 @@ class ExpectedSpec(BaseModel):
     lever_found_expected: bool | None = None
     lever_count_min: int | None = None
     lever_compliance_ok: bool | None = None
+    expected_best_is_multi_step: bool | None = None
+    min_lever_steps: int | None = None
 
 
 class NotesSpec(BaseModel):
@@ -68,6 +70,7 @@ class CaseScore(BaseModel):
     citations_valid: bool | None = None
     lever_count: int | None = None
     lever_compliance_ok: bool | None = None
+    lever_steps: int | None = None
 
 
 class CaseResult(BaseModel):

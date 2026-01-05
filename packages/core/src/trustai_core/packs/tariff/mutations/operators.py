@@ -20,6 +20,8 @@ class MutationOperator:
     assumptions: list[str]
     bounds: MutationBounds
     compliance_framing: str
+    touch_paths: set[str] = frozenset()
+    composable_with: set[str] | None = None
 
     def generate(self, dossier: ProductDossier) -> list[MutationCandidate]:
         raise NotImplementedError
@@ -40,6 +42,8 @@ class MutationOperator:
             assumptions=self.assumptions,
             bounds=self.bounds,
             compliance_framing=self.compliance_framing,
+            touch_paths=sorted(self.touch_paths),
+            composable_with=sorted(self.composable_with) if self.composable_with is not None else None,
         )
 
 
@@ -308,6 +312,7 @@ def build_default_operators() -> list[MutationOperator]:
             assumptions=["Upper material mix can be adjusted without altering intended use."],
             bounds=MutationBounds(max_cost_delta=0.2, max_material_delta=0.3),
             compliance_framing=compliance,
+            touch_paths={"upper_materials"},
         ),
         OutsoleMaterialShiftOperator(
             operator_id="op64_outsole_material_shift",
@@ -317,6 +322,7 @@ def build_default_operators() -> list[MutationOperator]:
             assumptions=["Outsole material mix can change without compromising durability."],
             bounds=MutationBounds(max_cost_delta=0.15, max_material_delta=0.25),
             compliance_framing=compliance,
+            touch_paths={"outsole_materials"},
         ),
         RemoveMetalToeOperator(
             operator_id="op64_remove_metal_toe",
@@ -326,6 +332,7 @@ def build_default_operators() -> list[MutationOperator]:
             assumptions=["Safety rating can be adjusted with alternate protection."],
             bounds=MutationBounds(max_cost_delta=0.1, max_material_delta=0.2, max_component_removal=0.2),
             compliance_framing=compliance,
+            touch_paths={"features.has_metal_toe"},
         ),
         SplitSetComponentsOperator(
             operator_id="op85_split_set_components",
@@ -335,6 +342,8 @@ def build_default_operators() -> list[MutationOperator]:
             assumptions=["Items can be sold separately without changing consumer use."],
             bounds=MutationBounds(max_cost_delta=0.2, max_material_delta=0.3),
             compliance_framing="Design/packaging change; not a declaration change.",
+            touch_paths={"packaging.sold_as_set", "components"},
+            composable_with={"op85_change_connector_material", "op85_adapter_housing_material"},
         ),
         ConnectorMaterialChangeOperator(
             operator_id="op85_change_connector_material",
@@ -344,6 +353,8 @@ def build_default_operators() -> list[MutationOperator]:
             assumptions=["Connector material can shift within performance specs."],
             bounds=MutationBounds(max_cost_delta=0.15, max_material_delta=0.2),
             compliance_framing=compliance,
+            touch_paths={"connector.material"},
+            composable_with={"op85_split_set_components"},
         ),
         AdapterHousingMaterialOperator(
             operator_id="op85_adapter_housing_material",
@@ -353,6 +364,8 @@ def build_default_operators() -> list[MutationOperator]:
             assumptions=["Housing material can shift with equivalent safety rating."],
             bounds=MutationBounds(max_cost_delta=0.2, max_material_delta=0.25),
             compliance_framing=compliance,
+            touch_paths={"adapter_housing.material"},
+            composable_with={"op85_split_set_components"},
         ),
         MaterialGradeShiftOperator(
             operator_id="op73_material_grade_shift",
@@ -362,6 +375,7 @@ def build_default_operators() -> list[MutationOperator]:
             assumptions=["Material grade change is feasible with engineering approval."],
             bounds=MutationBounds(max_cost_delta=0.2, max_material_delta=0.25),
             compliance_framing=compliance,
+            touch_paths={"material.grade"},
         ),
         FinishChangeOperator(
             operator_id="op73_finish_change",
@@ -371,6 +385,7 @@ def build_default_operators() -> list[MutationOperator]:
             assumptions=["Finish change does not affect regulatory performance requirements."],
             bounds=MutationBounds(max_cost_delta=0.1, max_material_delta=0.1),
             compliance_framing=compliance,
+            touch_paths={"finish"},
         ),
         ComponentSeparationOperator(
             operator_id="op84_component_separation",
@@ -380,6 +395,8 @@ def build_default_operators() -> list[MutationOperator]:
             assumptions=["Pump and motor can ship separately without changing function."],
             bounds=MutationBounds(max_cost_delta=0.2, max_material_delta=0.2),
             compliance_framing="Design/assembly change; not a declaration change.",
+            touch_paths={"packaging.sold_as_set", "components"},
+            composable_with={"op84_material_housing_change", "op84_impeller_material_shift"},
         ),
         HousingMaterialChangeOperator(
             operator_id="op84_material_housing_change",
@@ -389,6 +406,8 @@ def build_default_operators() -> list[MutationOperator]:
             assumptions=["Housing material can change while preserving performance."],
             bounds=MutationBounds(max_cost_delta=0.25, max_material_delta=0.3),
             compliance_framing=compliance,
+            touch_paths={"housing.material"},
+            composable_with={"op84_component_separation"},
         ),
         ImpellerMaterialShiftOperator(
             operator_id="op84_impeller_material_shift",
@@ -398,6 +417,8 @@ def build_default_operators() -> list[MutationOperator]:
             assumptions=["Impeller material change maintains pump performance."],
             bounds=MutationBounds(max_cost_delta=0.2, max_material_delta=0.2),
             compliance_framing=compliance,
+            touch_paths={"components.impeller.material"},
+            composable_with={"op84_component_separation"},
         ),
     ]
 

@@ -61,6 +61,25 @@ def run_missing_evidence_gate(
     )
 
 
+def precheck_missing_evidence_gate(
+    dossier: TariffDossier,
+    evidence_bundle: Iterable[EvidenceSource],
+) -> tuple[bool, list[str]]:
+    final_hts = _final_hts_code(dossier)
+    if not final_hts:
+        return True, []
+    final_chapter = _extract_hts_chapter(final_hts)
+    if not final_chapter:
+        return True, []
+    bundle = list(evidence_bundle)
+    violations: list[str] = []
+    if not _has_heading_for_chapter(bundle, final_chapter):
+        violations.append(f"missing_heading_chapter: {final_chapter}")
+    if not _has_chapter_note(bundle, final_chapter):
+        violations.append(f"missing_chapter_notes: {final_chapter}")
+    return not violations, sorted(set(violations))
+
+
 def _final_hts_code(dossier: TariffDossier) -> str | None:
     optimized = (dossier.optimized.hts_code or "").strip()
     if optimized:

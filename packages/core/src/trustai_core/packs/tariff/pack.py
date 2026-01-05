@@ -38,6 +38,7 @@ from trustai_core.packs.tariff.models import (
     TariffVerifyIteration,
 )
 from trustai_core.packs.tariff.mutations.engine import build_lever_proof, parse_product_dossier
+from trustai_core.packs.tariff.mutations.search import SearchConfig
 from trustai_core.packs.tariff.prompts import (
     build_tariff_critic_prompt,
     build_tariff_proposal_prompt,
@@ -68,6 +69,9 @@ class TariffOptions:
     candidate_chapters: list[str] | None = None
     evidence_top_k: int = 10
     lever_top_k: int = 3
+    lever_search_depth: int = 2
+    lever_beam_width: int = 4
+    lever_max_expansions: int = 40
 
 
 class TariffPack:
@@ -185,6 +189,11 @@ class TariffPack:
             evidence_bundle,
             evidence_payload,
             top_k=resolved_options.lever_top_k,
+            search_config=SearchConfig(
+                max_depth=resolved_options.lever_search_depth,
+                beam_width=resolved_options.lever_beam_width,
+                max_expansions=resolved_options.lever_max_expansions,
+            ),
         )
         lever_payload = lever_proof.model_dump(by_alias=True)
         proof_payload = _build_proof_payload(
@@ -292,6 +301,11 @@ class TariffPack:
             evidence_bundle,
             evidence_payload,
             top_k=options.lever_top_k,
+            search_config=SearchConfig(
+                max_depth=options.lever_search_depth,
+                beam_width=options.lever_beam_width,
+                max_expansions=options.lever_max_expansions,
+            ),
         )
         lever_payload = lever_proof.model_dump(by_alias=True)
         proof_payload = _build_proof_payload(
@@ -407,6 +421,9 @@ def _resolve_options(options: dict[str, object] | None) -> TariffOptions:
         candidate_chapters = [candidate_value]
     evidence_top_k = int(options.get("evidence_top_k") or 10)
     lever_top_k = int(options.get("lever_top_k") or 3)
+    lever_search_depth = int(options.get("lever_search_depth") or 2)
+    lever_beam_width = int(options.get("lever_beam_width") or 4)
+    lever_max_expansions = int(options.get("lever_max_expansions") or 40)
     return TariffOptions(
         max_iters=max_iters,
         threshold=threshold,
@@ -415,6 +432,9 @@ def _resolve_options(options: dict[str, object] | None) -> TariffOptions:
         candidate_chapters=candidate_chapters,
         evidence_top_k=evidence_top_k,
         lever_top_k=lever_top_k,
+        lever_search_depth=lever_search_depth,
+        lever_beam_width=lever_beam_width,
+        lever_max_expansions=lever_max_expansions,
     )
 
 

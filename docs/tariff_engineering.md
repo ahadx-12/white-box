@@ -1,6 +1,6 @@
-# Tariff Engineering v1
+# Tariff Engineering v2
 
-This document describes the Week 5 Tariff Engineering v1 implementation: deterministic mutation operators, a plausibility/compliance gate, and verified top‑K levers.
+This document describes the Week 6 Tariff Engineering v2 implementation: deterministic mutation operators, **constrained multi‑step beam search**, deduplicated state hashing, and stronger deterministic ranking for verified levers.
 
 ## Mutation Operator Framework
 
@@ -51,24 +51,66 @@ Gate output includes:
 
 Gate implementation: `packages/core/src/trustai_core/packs/tariff/gates/plausibility_gate.py`.
 
-## Verified Lever Pipeline
+## Verified Lever Pipeline (v2)
 
-The tariff pack now produces a **lever proof** payload:
+The tariff pack now produces a **lever proof** payload using a constrained multi‑step search:
 
 1. Generate operator candidates from the Product Dossier.
-2. Run the compliance gate.
-3. Apply the diff to produce a mutated dossier.
-4. Verify the mutated classification using the existing gates:
+2. **Beam search** up to `max_depth` (default 2, optional 3) with deterministic ordering.
+3. Apply early pruning (see below) before verification.
+4. Verify the surviving candidates using existing gates:
    - citation gate
    - missing evidence gate
    - GRI sequence validation
-5. Rank accepted levers deterministically and return top‑K.
+5. Rank verified sequences deterministically and return top‑K.
 
-Ranking v1:
+### Search Strategy (Beam Search)
 
-- Prefer `duty_savings` if duty rates are available.
-- Otherwise use a proxy score based on plausibility deltas.
-- Apply plausibility penalties and add gate confidence.
+We use **beam search** for deterministic, bounded exploration:
+
+- **Level 0**: baseline Product Dossier.
+- **Level 1**: apply each operator once.
+- **Level 2/3**: expand only the top `beam_width` candidates by heuristic score.
+- Hard cap on `max_expansions` ensures no exponential explosion.
+
+Beam search was chosen over best‑first because it is deterministic and easier to bound under strict depth/expansion limits.
+
+### Deduplication + Canonical Hashing
+
+Every mutated dossier is canonicalized and hashed to ensure deterministic dedup:
+
+- Dictionaries sorted by key.
+- Lists sorted only when order is semantically irrelevant:
+  - `components` (sorted by name/type/material)
+  - `upper_materials` / `outsole_materials` (sorted by material)
+- Hash = sha256 of canonical JSON.
+
+Identical states are **never re‑verified**, and dedup stats are recorded in the proof.
+
+### Early Pruning & Conflict Rules
+
+Candidates are pruned before verification if they fail any early checks:
+
+- **Plausibility/Compliance gate** fails.
+- **Missing evidence precheck** fails (chapter notes/headings not present).
+- **Conflict detection** rules:
+  - Same path replaced twice (`touch_paths` overlap).
+  - `packaging.sold_as_set` flipped more than once.
+  - Multiple component splits/merges in a sequence.
+- **Optional proxy prune**: drop candidates with no plausible savings proxy.
+
+Conflict reasons are deterministic and included in proof/debug output.
+
+### Ranking (Deterministic)
+
+Verified sequences are scored deterministically using:
+
+- `duty_savings_pct` (if available)
+- `cost_impact` penalty (if available)
+- `risk_flags` penalties
+- `gate_confidence` + `overall_score` bonuses
+
+Tie‑breakers are deterministic via lexicographic `operator_id` sequences.
 
 ## Lever Proof Format
 
@@ -80,10 +122,22 @@ The tariff proof payload includes:
 
 Selected levers include:
 
-- `candidate`
-- `baseline_summary` vs `mutated_summary`
+- `sequence`: list of per‑step operator IDs, diffs, and compliance results
+- `baseline_summary` vs `final` mutated summary
+- `verification` (final grounded verification)
 - `savings_estimate` + score
 - `evidence_bundle` + `citations`
-- `gate_results` (plausibility + verification)
+- `search_meta` (state hash + parent hashes)
+
+The proof also includes:
+
+- `search_summary` (depth, beam width, expanded/pruned counts)
+- `rejected_sequences` (top‑N rejections with reasons)
+
+## Tuning Beam Width/Depth Safely
+
+- Keep `max_depth` at **2** by default; only use **3** for narrowly scoped domains.
+- Increase `beam_width` slowly (e.g., 4 → 6) and monitor `max_expansions`.
+- Always set `max_expansions` to cap total search work deterministically.
 
 This ensures levers are auditable, lawful, and reproducible.
