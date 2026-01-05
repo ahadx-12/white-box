@@ -163,8 +163,10 @@ def test_tariff_levers_only_include_verified_candidates() -> None:
     assert proof.mutation_candidates
     assert proof.selected_levers
     for lever in proof.selected_levers:
-        assert lever.gate_results["plausibility"]["ok"]
         assert lever.gate_results["verification"]["ok"]
+        assert lever.sequence
+        for step in lever.sequence:
+            assert step.compliance_result["ok"]
 
 
 def test_no_product_dossier_returns_no_levers() -> None:

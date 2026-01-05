@@ -27,6 +27,8 @@ def _sample_case_payload(case_id: str) -> dict:
             "lever_found_expected": None,
             "lever_count_min": None,
             "lever_compliance_ok": None,
+            "expected_best_is_multi_step": None,
+            "min_lever_steps": None,
         },
         "notes": {"source": "synthetic", "tags": ["chapter_64"]},
     }
@@ -38,6 +40,7 @@ def _fake_result(
     rejected_because: list[str] | None = None,
     lever_count: int = 0,
     lever_compliance_ok: bool = True,
+    lever_steps: int = 1,
 ) -> dict:
     rejected = rejected_because or ([] if accepted else ["hts_or_questions_missing"])
     return {
@@ -72,8 +75,11 @@ def _fake_result(
             "mutation_candidates": [],
             "selected_levers": [
                 {
-                    "candidate": {"operator_id": f"op_{idx}", "label": "test", "category": "material"},
-                    "gate_results": {"plausibility": {"ok": lever_compliance_ok}},
+                    "sequence": [
+                        {"operator_id": f"op_{idx}", "label": "test", "category": "material", "diff": []}
+                        for _ in range(lever_steps)
+                    ],
+                    "gate_results": {"plausibility": [{"ok": lever_compliance_ok} for _ in range(lever_steps)]},
                 }
                 for idx in range(lever_count)
             ],
@@ -153,3 +159,14 @@ def test_lever_expectation_scoring() -> None:
     score = score_case(case, result)
     assert score.passed
     assert score.lever_count == 1
+
+
+def test_multi_step_expectation_scoring() -> None:
+    payload = _sample_case_payload("case_multi_step")
+    payload["expected"]["lever_found_expected"] = True
+    payload["expected"]["expected_best_is_multi_step"] = True
+    payload["expected"]["min_lever_steps"] = 2
+    case = BenchmarkCase.model_validate(payload)
+    result = _fake_result("6402.99", accepted=True, lever_count=1, lever_steps=2)
+    score = score_case(case, result)
+    assert score.passed

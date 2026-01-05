@@ -75,6 +75,8 @@ class MutationCandidate(BaseModel):
     assumptions: list[str]
     bounds: MutationBounds
     compliance_framing: str
+    touch_paths: list[str] = Field(default_factory=list)
+    composable_with: list[str] | None = None
 
 
 class LeverVerificationSummary(BaseModel):
@@ -103,21 +105,58 @@ class LeverSavingsEstimate(BaseModel):
 
     duty_savings_pct: float | None = None
     proxy_score: float | None = None
+    savings_estimate_type: Literal["duty_savings", "proxy"] = "proxy"
     plausibility_penalty: float = 0.0
     gate_confidence: float = 0.0
+    cost_impact: float = 0.0
+    overall_score: float = 0.0
+    risk_penalty: float = 0.0
+
+
+class LeverSequenceStep(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    operator_id: str
+    label: str
+    category: str
+    diff: list[ProductDiff]
+    compliance_result: dict[str, Any]
 
 
 class SelectedLever(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    candidate: MutationCandidate
+    sequence: list[LeverSequenceStep]
     baseline_summary: dict[str, Any]
-    mutated_summary: dict[str, Any]
+    final: dict[str, Any]
+    verification: LeverVerificationSummary | None = None
     savings_estimate: LeverSavingsEstimate
     score: float
     evidence_bundle: list[dict[str, Any]] = Field(default_factory=list)
     citations: list[dict[str, Any]] = Field(default_factory=list)
     gate_results: dict[str, Any] = Field(default_factory=dict)
+    search_meta: dict[str, Any] = Field(default_factory=dict)
+
+
+class SearchSummary(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    max_depth: int
+    beam_width: int
+    max_expansions: int
+    visited: int
+    expanded: int
+    pruned: int
+    unique: int
+    dedup_hits: int
+
+
+class RejectedSequence(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    sequence: list[str]
+    reason: str
+    state_hash: str | None = None
 
 
 class LeverProof(BaseModel):
@@ -126,3 +165,5 @@ class LeverProof(BaseModel):
     baseline_summary: dict[str, Any]
     mutation_candidates: list[MutationCandidateAudit]
     selected_levers: list[SelectedLever]
+    search_summary: SearchSummary | None = None
+    rejected_sequences: list[RejectedSequence] = Field(default_factory=list)

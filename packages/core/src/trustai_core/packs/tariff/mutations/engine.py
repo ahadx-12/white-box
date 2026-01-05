@@ -6,18 +6,18 @@ import orjson
 
 from trustai_core.packs.tariff.evidence.models import EvidenceSource
 from trustai_core.packs.tariff.gates import run_citation_gate, run_missing_evidence_gate
-from trustai_core.packs.tariff.gates.plausibility_gate import run_plausibility_gate
 from trustai_core.packs.tariff.models import TariffDossier, TariffVerificationResult
 from trustai_core.packs.tariff.mutations.models import (
     LeverProof,
     LeverSavingsEstimate,
+    LeverSequenceStep,
     LeverVerificationSummary,
     MutationCandidate,
-    MutationCandidateAudit,
     ProductDossier,
     SelectedLever,
 )
 from trustai_core.packs.tariff.mutations.operators import build_default_operators
+from trustai_core.packs.tariff.mutations.search import SearchConfig, run_beam_search
 from trustai_core.packs.tariff.gri import validate_gri_sequence
 
 
@@ -48,6 +48,7 @@ def build_lever_proof(
     evidence_bundle: list[EvidenceSource],
     evidence_payload: list[dict[str, Any]],
     top_k: int = 3,
+    search_config: SearchConfig | None = None,
 ) -> LeverProof:
     baseline_summary = _build_baseline_summary(product_dossier, tariff_dossier)
     if not product_dossier or not tariff_dossier:
@@ -57,153 +58,61 @@ def build_lever_proof(
             selected_levers=[],
         )
 
-    candidates = _generate_candidates(product_dossier)
-    audits: list[MutationCandidateAudit] = []
-    accepted: list[SelectedLever] = []
-
-    for candidate in candidates:
-        compliance_result = run_plausibility_gate(candidate, product_dossier)
-        rejection_reasons = list(compliance_result.violations)
-        verification_summary: LeverVerificationSummary | None = None
-        accepted_flag = False
-
-        if compliance_result.ok:
-            mutated = apply_diff(product_dossier, candidate)
-            verification_summary = _verify_mutation(tariff_dossier, evidence_bundle)
-            if not verification_summary.ok:
-                rejection_reasons.extend(verification_summary.rejected_because)
-            accepted_flag = verification_summary.ok
-        audits.append(
-            MutationCandidateAudit(
-                candidate=candidate,
-                compliance_gate_result=compliance_result.model_dump(),
-                verification_summary=verification_summary,
-                accepted=accepted_flag,
-                rejection_reasons=rejection_reasons,
-            )
-        )
-        if accepted_flag:
-            savings_estimate = _estimate_savings(tariff_dossier, candidate)
-            score = _score_candidate(savings_estimate)
-            accepted.append(
-                SelectedLever(
-                    candidate=candidate,
-                    baseline_summary=baseline_summary,
-                    mutated_summary=_build_mutated_summary(mutated, tariff_dossier),
-                    savings_estimate=savings_estimate,
-                    score=score,
-                    evidence_bundle=evidence_payload,
-                    citations=[citation.model_dump() for citation in tariff_dossier.citations],
-                    gate_results={
-                        "plausibility": compliance_result.model_dump(),
-                        "verification": verification_summary.model_dump() if verification_summary else None,
-                    },
-                )
-            )
-
-    ranked = sorted(accepted, key=lambda item: (-item.score, item.candidate.operator_id))
-    return LeverProof(
-        baseline_summary=baseline_summary,
-        mutation_candidates=audits,
-        selected_levers=ranked[: max(1, top_k)],
+    search_config = search_config or SearchConfig()
+    search_result = run_beam_search(
+        product_dossier=product_dossier,
+        tariff_dossier=tariff_dossier,
+        evidence_bundle=evidence_bundle,
+        operators=build_default_operators(),
+        verifier=_verify_mutation,
+        config=search_config,
     )
 
+    accepted: list[SelectedLever] = []
+    for sequence in search_result.sequences:
+        savings_estimate = _estimate_savings(tariff_dossier, sequence)
+        score = _score_sequence(savings_estimate)
+        steps = [
+            LeverSequenceStep(
+                operator_id=candidate.operator_id,
+                label=candidate.label,
+                category=candidate.category,
+                diff=candidate.diff,
+                compliance_result=compliance_result,
+            )
+            for candidate, compliance_result in zip(sequence.sequence, sequence.compliance_results)
+        ]
+        accepted.append(
+            SelectedLever(
+                sequence=steps,
+                baseline_summary=baseline_summary,
+                final=_build_mutated_summary(sequence.dossier, tariff_dossier),
+                verification=sequence.verification_summary,
+                savings_estimate=savings_estimate,
+                score=score,
+                evidence_bundle=evidence_payload,
+                citations=[citation.model_dump() for citation in tariff_dossier.citations],
+                gate_results={
+                    "plausibility": sequence.compliance_results,
+                    "verification": sequence.verification_summary.model_dump()
+                    if sequence.verification_summary
+                    else None,
+                },
+                search_meta={
+                    "state_hash": sequence.state_hash,
+                    "parent_hashes": sequence.parent_hashes,
+                },
+            )
+        )
 
-def _generate_candidates(product_dossier: ProductDossier) -> list[MutationCandidate]:
-    candidates: list[MutationCandidate] = []
-    for operator in build_default_operators():
-        candidates.extend(operator.generate(product_dossier))
-    return sorted(candidates, key=lambda item: item.operator_id)
-
-
-def apply_diff(product_dossier: ProductDossier, candidate: MutationCandidate) -> ProductDossier:
-    data = product_dossier.model_dump()
-    for diff in candidate.diff:
-        _apply_path(data, diff.path, diff.to_value, diff.op)
-    return ProductDossier.model_validate(data)
-
-
-def _apply_path(payload: dict[str, Any], path: str, value: Any, op: str) -> None:
-    if not path:
-        return
-    if op == "remove":
-        _remove_path(payload, path)
-        return
-    parts = path.split(".")
-    if parts[0] in {"upper_materials", "outsole_materials"} and len(parts) > 1:
-        _apply_material_share(payload, parts[0], parts[1], value)
-        return
-    if parts[0] == "components" and len(parts) > 1:
-        _apply_component_field(payload, parts[1:], value)
-        return
-    cursor: Any = payload
-    for part in parts[:-1]:
-        if part not in cursor or not isinstance(cursor[part], dict):
-            cursor[part] = {}
-        cursor = cursor[part]
-    if op == "split":
-        cursor[parts[-1]] = value if value is not None else cursor.get(parts[-1])
-        return
-    cursor[parts[-1]] = value
-
-
-def _apply_material_share(
-    payload: dict[str, Any],
-    key: str,
-    material: str,
-    value: Any,
-) -> None:
-    items = payload.get(key)
-    if not isinstance(items, list):
-        return
-    updated = False
-    for item in items:
-        if item.get("material") == material:
-            item["pct"] = value
-            updated = True
-            break
-    if not updated and value is not None:
-        items.append({"material": material, "pct": value})
-
-
-def _apply_component_field(
-    payload: dict[str, Any],
-    parts: list[str],
-    value: Any,
-) -> None:
-    components = payload.get("components")
-    if not isinstance(components, list):
-        return
-    identifier = parts[0].lower() if parts else ""
-    field_path = parts[1:]
-    if not field_path:
-        return
-    for component in components:
-        name = str(component.get("name", "")).lower()
-        comp_type = str(component.get("component_type", "")).lower()
-        if identifier and identifier not in {name, comp_type}:
-            continue
-        _apply_nested_field(component, field_path, value)
-        return
-
-
-def _apply_nested_field(component: dict[str, Any], field_path: list[str], value: Any) -> None:
-    cursor: Any = component
-    for part in field_path[:-1]:
-        if part not in cursor or not isinstance(cursor[part], dict):
-            cursor[part] = {}
-        cursor = cursor[part]
-    cursor[field_path[-1]] = value
-
-
-def _remove_path(payload: dict[str, Any], path: str) -> None:
-    parts = path.split(".")
-    cursor: Any = payload
-    for part in parts[:-1]:
-        if part not in cursor or not isinstance(cursor[part], dict):
-            return
-        cursor = cursor[part]
-    cursor.pop(parts[-1], None)
+    ranked = sorted(accepted, key=lambda item: (-item.score, _sequence_key(item.sequence)))
+    return LeverProof(
+        baseline_summary=baseline_summary,
+        mutation_candidates=search_result.audits,
+        selected_levers=ranked[: max(1, top_k)],
+        search_summary=search_result.search_summary,
+        rejected_sequences=search_result.rejected_sequences,
+    )
 
 
 def _verify_mutation(
@@ -232,21 +141,31 @@ def _verify_mutation(
 
 def _estimate_savings(
     dossier: TariffDossier,
-    candidate: MutationCandidate,
+    sequence: Any,
 ) -> LeverSavingsEstimate:
     baseline_rate = dossier.baseline.duty_rate_pct
     optimized_rate = dossier.optimized.duty_rate_pct
     duty_savings = None
     if baseline_rate is not None and optimized_rate is not None:
         duty_savings = round(max(0.0, baseline_rate - optimized_rate), 4)
-    plausibility_penalty = _plausibility_penalty(candidate)
+    plausibility_penalty = _sequence_plausibility_penalty(sequence.sequence)
     gate_confidence = 0.1 if dossier.citations else 0.0
     proxy_score = None if duty_savings is not None else max(0.0, 1.0 - plausibility_penalty)
+    cost_impact = _sequence_cost_impact(sequence.sequence)
+    risk_penalty = _sequence_risk_penalty(dossier, sequence.compliance_results)
+    overall_score = 0.05 + 0.4 * max(0, len(sequence.sequence) - 1)
+    if sequence.verification_summary and sequence.verification_summary.ok:
+        overall_score += 0.05
+    savings_type = "duty_savings" if duty_savings is not None else "proxy"
     return LeverSavingsEstimate(
         duty_savings_pct=duty_savings,
         proxy_score=proxy_score,
+        savings_estimate_type=savings_type,
         plausibility_penalty=plausibility_penalty,
         gate_confidence=gate_confidence,
+        cost_impact=cost_impact,
+        overall_score=overall_score,
+        risk_penalty=risk_penalty,
     )
 
 
@@ -266,9 +185,48 @@ def _plausibility_penalty(candidate: MutationCandidate) -> float:
     return round(sum(penalties) / len(penalties), 4)
 
 
-def _score_candidate(savings: LeverSavingsEstimate) -> float:
+def _sequence_plausibility_penalty(sequence: list[MutationCandidate]) -> float:
+    if not sequence:
+        return 0.0
+    penalties = [_plausibility_penalty(candidate) for candidate in sequence]
+    return round(sum(penalties) / len(penalties), 4)
+
+
+def _sequence_cost_impact(sequence: list[MutationCandidate]) -> float:
+    deltas: list[float] = []
+    for candidate in sequence:
+        for diff in candidate.diff:
+            cost_delta = diff.details.get("cost_delta_pct")
+            if cost_delta is not None:
+                deltas.append(abs(float(cost_delta)))
+    if not deltas:
+        return 0.0
+    return round(sum(deltas) / len(deltas), 4)
+
+
+def _sequence_risk_penalty(dossier: TariffDossier, compliance_results: list[dict[str, Any]]) -> float:
+    risk_flags = set(dossier.optimized.risk_flags or [])
+    for result in compliance_results:
+        for flag in result.get("risk_flags") or []:
+            risk_flags.add(flag)
+    return round(0.05 * len(risk_flags), 4)
+
+
+def _score_sequence(savings: LeverSavingsEstimate) -> float:
     base = savings.duty_savings_pct if savings.duty_savings_pct is not None else (savings.proxy_score or 0.0)
-    return round(base - savings.plausibility_penalty + savings.gate_confidence, 6)
+    score = (
+        base
+        - savings.plausibility_penalty
+        - savings.cost_impact
+        - savings.risk_penalty
+        + savings.gate_confidence
+        + savings.overall_score
+    )
+    return round(score, 6)
+
+
+def _sequence_key(sequence: list[LeverSequenceStep]) -> str:
+    return "|".join(step.operator_id for step in sequence)
 
 
 def _build_baseline_summary(

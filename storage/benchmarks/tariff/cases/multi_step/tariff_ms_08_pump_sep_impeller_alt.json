@@ -1,0 +1,38 @@
+{
+  "id": "tariff_ms_08_pump_sep_impeller_alt",
+  "pack_id": "tariff",
+  "case_type": "savings_possible",
+  "difficulty": "medium",
+  "input": {
+    "input": "{\"product_dossier\": {\"product_id\": \"PM-MS-004\", \"product_summary\": \"Pump assembly sold as a kit with impeller.\", \"sold_as_set\": true, \"components\": [{\"name\": \"Pump\", \"component_type\": \"pump\", \"material\": \"iron\", \"contains_electronics\": false}, {\"name\": \"Motor\", \"component_type\": \"motor\", \"material\": \"steel\", \"contains_electronics\": true}, {\"name\": \"Impeller\", \"component_type\": \"impeller\", \"material\": \"metal\", \"contains_electronics\": false}], \"connector_material\": null, \"adapter_housing_material\": null, \"housing_material\": \"cast iron\", \"contains_electronics\": true}}",
+    "options": {
+      "max_iters": 2
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "8413.70"
+    ],
+    "allowed_hts": [],
+    "must_not_hts": [
+      "9999.99.9999"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null,
+    "lever_found_expected": true,
+    "lever_count_min": 1,
+    "lever_compliance_ok": true,
+    "expected_best_is_multi_step": true,
+    "min_lever_steps": 2
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "multi_step",
+      "chapter_84",
+      "pumps"
+    ]
+  }
+}
