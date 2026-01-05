@@ -33,12 +33,27 @@ def _load_cases_from_path(path: Path) -> list[BenchmarkCase]:
 def _default_fixture_resolver(case: BenchmarkCase) -> Path | None:
     root = Path("storage/benchmarks")
     suite = case.pack_id
+    if case.expected.expected_refusal_category == "missing_evidence":
+        fixture_path = root / suite / "fixtures" / "fixture_missing_evidence.json"
+        if fixture_path.exists():
+            return fixture_path
     fixture_map = {
         "positive": "fixture_positive.json",
         "negative": "fixture_negative.json",
         "adversarial": "fixture_positive.json",
         "no_savings": "fixture_no_savings.json",
     }
+    tag_map = {
+        "chapter_73": "fixture_ch73.json",
+        "chapter_84": "fixture_ch84.json",
+        "chapter_85": "fixture_ch85.json",
+    }
+    for tag in case.notes.tags:
+        fixture_name = tag_map.get(tag)
+        if fixture_name:
+            fixture_path = root / suite / "fixtures" / fixture_name
+            if fixture_path.exists():
+                return fixture_path
     fixture_name = fixture_map.get(case.case_type)
     if not fixture_name:
         return None

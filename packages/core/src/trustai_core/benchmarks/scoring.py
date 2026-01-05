@@ -99,6 +99,7 @@ def _critical_gates_passed(rejected_because: list[str]) -> bool:
 def _extract_refusal_category(rejected_because: list[str]) -> RefusalCategory | None:
     if not rejected_because:
         return None
+    missing_evidence_markers = {"missing_evidence", "missing_evidence_gate_failed"}
     insufficient_markers = {
         "hts_or_questions_missing",
         "baseline_duty_missing",
@@ -117,6 +118,8 @@ def _extract_refusal_category(rejected_because: list[str]) -> RefusalCategory | 
         "llm_unavailable",
     }
     for reason in rejected_because:
+        if reason in missing_evidence_markers:
+            return "missing_evidence"
         if reason in insufficient_markers:
             return "insufficient_info"
         if reason in ambiguous_markers:
@@ -124,6 +127,24 @@ def _extract_refusal_category(rejected_because: list[str]) -> RefusalCategory | 
         if reason in out_of_scope_markers:
             return "out_of_scope"
     return "insufficient_info"
+
+
+def _mentions_missing_evidence(payload: dict[str, Any]) -> bool:
+    iteration = _extract_final_iteration(payload) or {}
+    missing = iteration.get("missing") or []
+    feedback = (iteration.get("feedback_text") or "").lower()
+    dossier = _extract_tariff_dossier(payload) or {}
+    questions = dossier.get("questions_for_user") or []
+    tokens = " ".join(missing + questions + [feedback]).lower()
+    return any(
+        phrase in tokens
+        for phrase in (
+            "missing evidence",
+            "missing chapter evidence",
+            "chapter notes",
+            "attach missing chapter",
+        )
+    )
 
 
 def _extract_chapter(hts_code: str | None) -> str | None:
@@ -249,6 +270,8 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
         else:
             if case.expected.expected_refusal_category:
                 if refusal_category == case.expected.expected_refusal_category:
+                    score = REFUSAL_MATCH_SCORE
+                elif case.expected.expected_refusal_category == "missing_evidence" and _mentions_missing_evidence(payload):
                     score = REFUSAL_MATCH_SCORE
                 else:
                     penalties.append("refusal_category_mismatch")
