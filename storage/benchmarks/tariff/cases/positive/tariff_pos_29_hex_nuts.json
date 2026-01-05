@@ -1,0 +1,32 @@
+{
+  "id": "tariff_pos_29_hex_nuts",
+  "pack_id": "tariff",
+  "case_type": "positive",
+  "difficulty": "medium",
+  "input": {
+    "input": "Hex nuts and washers of steel.",
+    "options": {
+      "max_iters": 3,
+      "candidate_chapters": [
+        "73"
+      ]
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "7318.15"
+    ],
+    "allowed_hts": [],
+    "must_not_hts": [],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "chapter_73"
+    ]
+  }
+}

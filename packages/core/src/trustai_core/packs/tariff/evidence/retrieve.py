@@ -7,7 +7,12 @@ from trustai_core.packs.tariff.evidence.models import EvidenceSource
 from trustai_core.packs.tariff.evidence.store import TariffEvidenceStore
 
 TOKEN_PATTERN = re.compile(r"[a-zA-Z0-9]+")
-SECTION_BY_CHAPTER = {"64": "SEC12"}
+SECTION_BY_CHAPTER = {
+    "64": "SEC12",
+    "73": "SEC15",
+    "84": "SEC16",
+    "85": "SEC16",
+}
 
 
 class TariffEvidenceRetriever:
@@ -26,6 +31,7 @@ class TariffEvidenceRetriever:
         candidate_chapters = {chapter.strip() for chapter in candidate_chapters or [] if chapter}
         scored = []
         heading_chapters: set[str] = set()
+        heading_scores: list[tuple[int, EvidenceSource]] = []
         for source in self._sources:
             score = len(keywords.intersection(self._token_cache[source.source_id]))
             chapter = _extract_chapter(source.source_id)
@@ -33,7 +39,18 @@ class TariffEvidenceRetriever:
                 if score >= 2 or (chapter and chapter in candidate_chapters):
                     if chapter:
                         heading_chapters.add(chapter)
+                heading_scores.append((score, source))
             scored.append((score, source))
+
+        top_heading_chapters = {
+            _extract_chapter(source.source_id)
+            for score, source in sorted(
+                heading_scores,
+                key=lambda item: (-item[0], item[1].source_id),
+            )[:top_k]
+            if score > 0 and _extract_chapter(source.source_id)
+        }
+        heading_chapters.update(top_heading_chapters)
 
         forced = _collect_forced_sources(self._sources, heading_chapters, candidate_chapters)
         gri_sources = [source for source in self._sources if source.source_type == "gri"]

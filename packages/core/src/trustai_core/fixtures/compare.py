@@ -14,6 +14,7 @@ TARIFF_CRITICAL_GATES = (
     "too_many_what_if_candidates",
     "missing_what_if_candidates",
     "citation_gate_failed",
+    "missing_evidence",
 )
 
 

@@ -24,6 +24,7 @@ def build_tariff_proposal_prompt(
         Requirements:
         - Output STRICT JSON that matches the provided schema. No extra keys.
         - Provide baseline classification + duty estimate + assumptions.
+        - Include candidate_chapters: a short list of 2-digit chapters considered (e.g., ["84","85"]).
         - Provide a GRI trace with steps 1→6 in order, each with applied yes/no, reasoning,
           rejected_because, citations, and a 6-length step_vector. Do NOT skip steps.
         - GRI 3 (incl. 3(b) essential character) can only be applied after rejecting GRI 1 & 2.

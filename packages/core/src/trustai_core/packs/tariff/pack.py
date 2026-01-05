@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -15,7 +16,7 @@ from trustai_core.packs.tariff.evidence import (
     TariffEvidenceRetriever,
     TariffEvidenceStore,
 )
-from trustai_core.packs.tariff.gates import run_citation_gate
+from trustai_core.packs.tariff.gates import run_citation_gate, run_missing_evidence_gate
 from trustai_core.packs.tariff.gates.citation_gate import collect_citations
 from trustai_core.packs.tariff.hdc import (
     HDCScore,
@@ -48,6 +49,12 @@ TARIFF_MIN_MUTATIONS_DEFAULT = 8
 TARIFF_MAX_ITERS_CAP = 6
 MAX_WHAT_IF_CANDIDATES = 5
 ESSENTIAL_CHARACTER_MIN_SCORE = 0.58
+SECTION_BY_CHAPTER = {
+    "64": "SEC12",
+    "73": "SEC15",
+    "84": "SEC16",
+    "85": "SEC16",
+}
 
 
 @dataclass
@@ -105,6 +112,7 @@ class TariffPack:
         mismatch_report: str = ""
         feedback: str | None = None
         previous_dossier: TariffDossier | None = None
+        candidate_chapters: list[str] = []
 
         try:
             for i in range(1, resolved_options.max_iters + 1):
@@ -126,6 +134,11 @@ class TariffPack:
                     )
                 dossier = await router.proposer.complete_tariff(prompt)
                 proposal_history.append(dossier)
+                candidate_chapters = _resolve_candidate_chapters(dossier, evidence_bundle)
+                evidence_bundle = _ensure_candidate_coverage(
+                    evidence_bundle,
+                    candidate_chapters,
+                )
                 critique = await router.critic.complete_critique(
                     build_tariff_critic_prompt(
                         input_text,
@@ -172,6 +185,7 @@ class TariffPack:
             critic_outputs,
             router.model_routing,
             evidence_bundle,
+            candidate_chapters,
         )
         proof_id = sha256_canonical_json(proof_payload)
         citations = collect_citations(dossier) if dossier else []
@@ -220,12 +234,18 @@ class TariffPack:
         previous_bundle: list[int] | None = None
         mismatch_report = ""
         previous_dossier: TariffDossier | None = None
+        candidate_chapters: list[str] = []
 
         for i in range(1, options.max_iters + 1):
             proposal_payload = proposals[min(i - 1, len(proposals) - 1)]
             critique_payload = critiques[min(i - 1, len(critiques) - 1)]
             dossier = TariffDossier.model_validate(proposal_payload)
             proposal_history.append(dossier)
+            candidate_chapters = _resolve_candidate_chapters(dossier, evidence_bundle)
+            evidence_bundle = _ensure_candidate_coverage(
+                evidence_bundle,
+                candidate_chapters,
+            )
             critique = TariffCritique.model_validate(critique_payload)
             iteration, previous_bundle, mismatch_report = _evaluate_iteration(
                 i=i,
@@ -260,6 +280,7 @@ class TariffPack:
             critic_outputs,
             model_routing,
             evidence_bundle,
+            candidate_chapters,
         )
         proof_id = sha256_canonical_json(proof_payload)
         citations = collect_citations(dossier) if dossier else []
@@ -463,6 +484,7 @@ def _build_llm_error_result(
         [],
         {},
         evidence_bundle,
+        [],
     )
     proof_id = sha256_canonical_json(payload)
     return TariffVerificationResult(
@@ -649,6 +671,7 @@ def _evaluate_iteration(
     gate = _gate_dossier(dossier, min_mutations)
     sequence_ok, sequence_violations = validate_gri_sequence(dossier.gri_trace)
     citation_gate = run_citation_gate(dossier, evidence_bundle)
+    missing_evidence_gate = run_missing_evidence_gate(dossier, evidence_bundle)
     conflicts = sorted(set(critique.conflicts + gate.conflicts))
     unsupported = sorted(set(critique.unsupported + gate.unsupported))
     missing = sorted(set(critique.missing + gate.missing))
@@ -659,6 +682,9 @@ def _evaluate_iteration(
     if not citation_gate.ok:
         rejected_because.append("citation_gate_failed")
         missing.extend(citation_gate.violations)
+    if not missing_evidence_gate.ok:
+        rejected_because.append("missing_evidence")
+        missing.extend(missing_evidence_gate.violations)
 
     baseline_duty = dossier.baseline.duty_rate_pct
     optimized_duty = dossier.optimized.duty_rate_pct
@@ -702,6 +728,7 @@ def _evaluate_iteration(
         mismatch_report,
         _build_what_if_feedback(dossier, rejected_because),
         citation_gate.revision_guidance,
+        missing_evidence_gate.revision_guidance,
     )
     answer_delta_summary = _summarize_dossier_delta(previous_dossier, dossier)
     conflicts = _cap_list(conflicts, 50)
@@ -730,6 +757,7 @@ def _evaluate_iteration(
             else None
         ),
         citation_gate_result=citation_gate.model_dump(),
+        missing_evidence_gate_result=missing_evidence_gate.model_dump(),
     )
     return iteration, hdc_bundle, mismatch_report
 
@@ -966,6 +994,7 @@ def _build_feedback_text(
     mismatch_report: str,
     what_if_feedback: str | None = None,
     citation_guidance: str | None = None,
+    missing_evidence_guidance: str | None = None,
 ) -> str:
     parts = [mismatch_report]
     if critique.missing:
@@ -980,6 +1009,8 @@ def _build_feedback_text(
         parts.append(what_if_feedback)
     if citation_guidance:
         parts.append(citation_guidance)
+    if missing_evidence_guidance:
+        parts.append(missing_evidence_guidance)
     if rejected_because:
         parts.append("Rejected: " + ", ".join(rejected_because))
     return "\n".join(parts)
@@ -1069,11 +1100,16 @@ def _build_proof_payload(
     critics: list[TariffCritique],
     model_routing: dict[str, Any],
     evidence_bundle: list[EvidenceSource] | None,
+    candidate_chapters: list[str],
 ) -> dict[str, Any]:
     evidence_payload = [source.model_dump() for source in evidence_bundle or []]
     citation_gate_result = iterations[-1].citation_gate_result if iterations else None
     citations = collect_citations(dossier) if dossier else []
     status = "verified" if iterations and iterations[-1].accepted else "failed"
+    candidate_chapter_evidence = _build_candidate_chapter_evidence(
+        candidate_chapters,
+        evidence_bundle or [],
+    )
     return {
         "status": status,
         "pack": pack,
@@ -1099,6 +1135,8 @@ def _build_proof_payload(
         "evidence_bundle": evidence_payload,
         "citations": [citation.model_dump() for citation in citations],
         "citation_gate_result": citation_gate_result,
+        "candidate_chapters": candidate_chapters,
+        "candidate_chapter_evidence": candidate_chapter_evidence,
     }
 
 
@@ -1181,6 +1219,126 @@ def _build_evidence_bundle(
         ]
         bundle.extend(user_sources)
     return bundle
+
+
+def _resolve_candidate_chapters(
+    dossier: TariffDossier,
+    evidence_bundle: list[EvidenceSource],
+) -> list[str]:
+    provided = {
+        chapter
+        for chapter in (
+            _normalize_chapter(chapter) for chapter in dossier.candidate_chapters
+        )
+        if chapter
+    }
+    if provided:
+        return sorted(provided)
+    inferred = set(_heading_chapters(evidence_bundle))
+    final_hts = _final_hts_code(dossier)
+    if final_hts:
+        final_chapter = _extract_hts_chapter(final_hts)
+        if final_chapter:
+            inferred.add(final_chapter)
+    return sorted(inferred)
+
+
+def _ensure_candidate_coverage(
+    evidence_bundle: list[EvidenceSource],
+    candidate_chapters: list[str],
+) -> list[EvidenceSource]:
+    if not candidate_chapters:
+        return evidence_bundle
+    store = TariffEvidenceStore()
+    sources = list(store.list_sources())
+    bundled = {source.source_id: source for source in evidence_bundle}
+    sections = {SECTION_BY_CHAPTER.get(chapter) for chapter in candidate_chapters}
+    for source in sources:
+        chapter = _extract_chapter(source.source_id)
+        if source.source_type in {"heading", "subheading"} and chapter in candidate_chapters:
+            bundled.setdefault(source.source_id, source)
+        if source.source_type == "chapter_note" and chapter in candidate_chapters:
+            bundled.setdefault(source.source_id, source)
+        if source.source_type == "section_note" and any(
+            section and source.source_id.startswith(f"{section}.") for section in sections
+        ):
+            bundled.setdefault(source.source_id, source)
+    return sorted(bundled.values(), key=lambda item: item.source_id)
+
+
+def _build_candidate_chapter_evidence(
+    candidate_chapters: list[str],
+    evidence_bundle: list[EvidenceSource],
+) -> dict[str, dict[str, list[str]]]:
+    evidence_map: dict[str, dict[str, list[str]]] = {}
+    for chapter in candidate_chapters:
+        evidence_map[chapter] = {"headings": [], "notes": [], "section_notes": []}
+    for source in evidence_bundle:
+        chapter = _extract_chapter(source.source_id)
+        if chapter not in evidence_map:
+            continue
+        if source.source_type in {"heading", "subheading"}:
+            evidence_map[chapter]["headings"].append(source.source_id)
+        elif source.source_type == "chapter_note":
+            evidence_map[chapter]["notes"].append(source.source_id)
+        elif source.source_type == "section_note":
+            evidence_map[chapter]["section_notes"].append(source.source_id)
+    for chapter, evidence in evidence_map.items():
+        for key, values in evidence.items():
+            evidence[key] = sorted(set(values))
+        if not evidence["section_notes"]:
+            section = SECTION_BY_CHAPTER.get(chapter)
+            if section:
+                evidence["section_notes"] = [
+                    source.source_id
+                    for source in evidence_bundle
+                    if source.source_type == "section_note"
+                    and source.source_id.startswith(f"{section}.")
+                ]
+    return evidence_map
+
+
+def _heading_chapters(evidence_bundle: list[EvidenceSource]) -> set[str]:
+    chapters = set()
+    for source in evidence_bundle:
+        if source.source_type not in {"heading", "subheading"}:
+            continue
+        chapter = _extract_chapter(source.source_id)
+        if chapter:
+            chapters.add(chapter)
+    return chapters
+
+
+def _final_hts_code(dossier: TariffDossier) -> str | None:
+    optimized = (dossier.optimized.hts_code or "").strip()
+    if optimized:
+        return optimized
+    baseline = (dossier.baseline.hts_code or "").strip()
+    return baseline or None
+
+
+def _normalize_chapter(chapter: str) -> str | None:
+    digits = re.sub(r"\D", "", chapter)
+    if len(digits) < 2:
+        return None
+    return digits[:2]
+
+
+def _extract_hts_chapter(hts_code: str) -> str | None:
+    digits = re.sub(r"\D", "", hts_code)
+    if len(digits) < 2:
+        return None
+    return digits[:2]
+
+
+def _extract_chapter(source_id: str) -> str | None:
+    match = re.match(r"HTS\.(\d{2})", source_id)
+    if match:
+        return match.group(1)
+    match = re.match(r"CH(\d{2})\.", source_id)
+    if match:
+        return match.group(1)
+    return None
 
 
 register_pack("tariff", lambda context: TariffPack(context))

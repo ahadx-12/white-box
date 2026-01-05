@@ -1,0 +1,32 @@
+{
+  "id": "tariff_pos_31_self_tapping_screws",
+  "pack_id": "tariff",
+  "case_type": "positive",
+  "difficulty": "medium",
+  "input": {
+    "input": "Self-tapping steel screws for metal.",
+    "options": {
+      "max_iters": 3,
+      "candidate_chapters": [
+        "73"
+      ]
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "7318.15"
+    ],
+    "allowed_hts": [],
+    "must_not_hts": [],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "chapter_73"
+    ]
+  }
+}

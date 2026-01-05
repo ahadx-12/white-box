@@ -29,14 +29,19 @@ def _sample_case_payload(case_id: str) -> dict:
     }
 
 
-def _fake_result(hts_code: str, accepted: bool = True) -> dict:
+def _fake_result(
+    hts_code: str,
+    accepted: bool = True,
+    rejected_because: list[str] | None = None,
+) -> dict:
+    rejected = rejected_because or ([] if accepted else ["hts_or_questions_missing"])
     return {
         "status": "verified" if accepted else "failed",
         "iterations": [
             {
                 "i": 1,
                 "accepted": accepted,
-                "rejected_because": [] if accepted else ["hts_or_questions_missing"],
+                "rejected_because": [] if accepted else rejected,
                 "sequence_violations": [],
                 "citation_gate_result": {"ok": True, "violations": []},
             }
@@ -108,3 +113,15 @@ def test_runner_report_structure(tmp_path: Path) -> None:
     payload = report.model_dump()
     assert payload["schema_version"] == "v1"
     assert payload["summary"]["total_cases"] == 2
+
+
+def test_missing_evidence_refusal_scoring() -> None:
+    payload = _sample_case_payload("case_missing_evidence")
+    payload["expected"]["expected_accept"] = False
+    payload["expected"]["expected_refusal_category"] = "missing_evidence"
+    payload["case_type"] = "negative"
+    case = BenchmarkCase.model_validate(payload)
+    result = _fake_result("8504.10", accepted=False, rejected_because=["missing_evidence"])
+    score = score_case(case, result)
+    assert score.passed
+    assert score.refusal_category_actual == "missing_evidence"

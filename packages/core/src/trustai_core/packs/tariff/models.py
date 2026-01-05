@@ -126,6 +126,7 @@ class TariffDossier(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     product_summary: str
+    candidate_chapters: list[str] = Field(default_factory=list)
     assumptions: list[str]
     gri_trace: GriTrace
     composition_table: list[CompositionComponent]
@@ -171,6 +172,7 @@ class TariffVerifyIteration(BaseModel):
     sequence_violations: list[str] = Field(default_factory=list)
     essential_character_score: float | None = None
     citation_gate_result: dict[str, Any] | None = None
+    missing_evidence_gate_result: dict[str, Any] | None = None
 
 
 class TariffVerificationResult(BaseModel):

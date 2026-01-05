@@ -20,3 +20,15 @@ def test_tariff_retriever_is_deterministic() -> None:
     assert ids_a == ids_b
     assert any(source_id.startswith("GRI.") for source_id in ids_a)
     assert any(source_id.startswith("CH64.") for source_id in ids_a)
+
+
+def test_tariff_retriever_bundles_chapter_and_section_notes() -> None:
+    retriever = TariffEvidenceRetriever()
+    bundle = retriever.retrieve(
+        "insulated electric cable with connectors",
+        top_k=6,
+    )
+    ids = [source.source_id for source in bundle]
+    assert any(source_id.startswith("HTS.8544") for source_id in ids)
+    assert any(source_id.startswith("CH85.") for source_id in ids)
+    assert any(source_id.startswith("SEC16.") for source_id in ids)

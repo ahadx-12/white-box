@@ -6,7 +6,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 CaseType = Literal["positive", "negative", "adversarial", "no_savings"]
 Difficulty = Literal["easy", "medium", "hard", "expert"]
-RefusalCategory = Literal["insufficient_info", "ambiguous", "out_of_scope"]
+RefusalCategory = Literal[
+    "insufficient_info",
+    "ambiguous",
+    "out_of_scope",
+    "missing_evidence",
+]
 
 
 class ExpectedSpec(BaseModel):
