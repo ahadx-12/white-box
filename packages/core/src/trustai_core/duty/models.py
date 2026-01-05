@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Literal
 
+from trustai_core.duty.programs import ProgramResult
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -13,6 +15,9 @@ class DutyFlow(BaseModel):
     origin_country: str | None = None
     origin_method: str | None = None
     preference_program: str | None = None
+    effective_date: str | None = None
+    bom: dict | None = None
+    manufacturing: dict | None = None
 
 
 class DutyLineRate(BaseModel):
@@ -23,12 +28,14 @@ class DutyLineRate(BaseModel):
     preferential_rate_pct: float | None = None
 
 
-class AdditionalDuty(BaseModel):
+class AppliedDutyLayer(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    code: str
-    description: str | None = None
-    rate_pct: float
+    layer_id: str
+    pct: float
+    reason: str
+    effective_from: str
+    effective_to: str | None = None
 
 
 class DutyBreakdown(BaseModel):
@@ -36,7 +43,10 @@ class DutyBreakdown(BaseModel):
 
     base_rate_pct: float
     preferential_rate_pct: float | None = None
-    additional_duties: list[AdditionalDuty] = Field(default_factory=list)
-    surtaxes: list[AdditionalDuty] = Field(default_factory=list)
+    applied_additional_duties: list[AppliedDutyLayer] = Field(default_factory=list)
+    applied_surtaxes: list[AppliedDutyLayer] = Field(default_factory=list)
+    applied_layer_ids: list[str] = Field(default_factory=list)
+    program_result: ProgramResult | None = None
     total_rate_pct: float
     assumptions: list[str] = Field(default_factory=list)
+    effective_date: str | None = None

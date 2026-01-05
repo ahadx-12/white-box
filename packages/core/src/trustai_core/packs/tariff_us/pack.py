@@ -1236,6 +1236,9 @@ def _resolve_flow(input_text: str) -> DutyFlow:
         origin_country=flow_payload.get("origin_country"),
         origin_method=flow_payload.get("origin_method"),
         preference_program=flow_payload.get("preference_program"),
+        effective_date=flow_payload.get("effective_date") or payload.get("effective_date"),
+        bom=payload.get("bom"),
+        manufacturing=payload.get("manufacturing"),
     )
 
 
@@ -1298,10 +1301,13 @@ def _missing_duty_breakdown(reason: str) -> DutyBreakdown:
     return DutyBreakdown(
         base_rate_pct=0.0,
         preferential_rate_pct=None,
-        additional_duties=[],
-        surtaxes=[],
+        applied_additional_duties=[],
+        applied_surtaxes=[],
+        applied_layer_ids=[],
+        program_result=None,
         total_rate_pct=0.0,
         assumptions=[reason],
+        effective_date=None,
     )
 
 

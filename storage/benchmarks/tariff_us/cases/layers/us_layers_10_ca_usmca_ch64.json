@@ -1,0 +1,27 @@
+{
+  "id": "us_layers_10_ca_usmca_ch64",
+  "pack_id": "tariff_us",
+  "case_type": "positive",
+  "difficulty": "easy",
+  "input": {
+    "input": "{\"importing_country\": \"US\", \"exporting_country\": \"CA\", \"origin_country\": \"CA\", \"effective_date\": \"2024-06-01\", \"preference_program\": \"USMCA\", \"product_dossier\": {\"product_summary\": \"Athletic shoe.\"}}",
+    "options": {"max_iters": 2, "candidate_chapters": ["64"]}
+  },
+  "expected": {
+    "preferred_hts": ["6404.11.90"],
+    "allowed_hts": [],
+    "must_not_hts": [],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null,
+    "expected_duty_total_rate_pct": 0.0,
+    "expected_duty_delta_direction": "flat",
+    "lever_found_expected": null,
+    "lever_count_min": null,
+    "lever_compliance_ok": null,
+    "expected_best_is_multi_step": null,
+    "min_lever_steps": null
+  },
+  "notes": {"source": "synthetic", "tags": ["chapter_64"]}
+}

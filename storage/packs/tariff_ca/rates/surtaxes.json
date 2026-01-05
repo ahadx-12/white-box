@@ -1,1 +1,28 @@
-{}
+[
+  {
+    "layer_id": "CA.SURTAX.CN.V1",
+    "type": "surtax",
+    "pct": 10.0,
+    "match": {
+      "origin_countries": ["CN"],
+      "line_prefixes": ["73"]
+    },
+    "effective_from": "2024-01-01",
+    "effective_to": null,
+    "reason": "Canada surtax (demo subset).",
+    "source_id": "CA.LAW.SURTAX.DEMO"
+  },
+  {
+    "layer_id": "CA.SURTAX.US.V1",
+    "type": "surtax",
+    "pct": 5.0,
+    "match": {
+      "origin_countries": ["US"],
+      "line_prefixes": ["84"]
+    },
+    "effective_from": "2023-01-01",
+    "effective_to": "2023-12-31",
+    "reason": "Canada surtax (demo subset).",
+    "source_id": "CA.LAW.SURTAX.RETALIATION.DEMO"
+  }
+]

@@ -1,0 +1,27 @@
+{
+  "id": "us_layers_02_cn_ch73_out",
+  "pack_id": "tariff_us",
+  "case_type": "positive",
+  "difficulty": "easy",
+  "input": {
+    "input": "{\"importing_country\": \"US\", \"exporting_country\": \"CN\", \"origin_country\": \"CN\", \"effective_date\": \"2018-01-01\", \"preference_program\": null, \"product_dossier\": {\"product_summary\": \"Steel fasteners.\"}}",
+    "options": {"max_iters": 2, "candidate_chapters": ["73"]}
+  },
+  "expected": {
+    "preferred_hts": ["7318.15"],
+    "allowed_hts": [],
+    "must_not_hts": [],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null,
+    "expected_duty_total_rate_pct": 8.0,
+    "expected_duty_delta_direction": "flat",
+    "lever_found_expected": null,
+    "lever_count_min": null,
+    "lever_compliance_ok": null,
+    "expected_best_is_multi_step": null,
+    "min_lever_steps": null
+  },
+  "notes": {"source": "synthetic", "tags": ["chapter_73"]}
+}

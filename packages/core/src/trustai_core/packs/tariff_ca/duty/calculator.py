@@ -1,19 +1,24 @@
 from __future__ import annotations
 
 import os
+from datetime import date
 from pathlib import Path
 from typing import Any
 
 import orjson
 
-from trustai_core.duty.models import AdditionalDuty, DutyBreakdown, DutyFlow
+from trustai_core.duty.layers import parse_effective_date
+from trustai_core.duty.models import DutyBreakdown, DutyFlow
+from trustai_core.packs.tariff_ca.duty.layers import CADutyLayers
+from trustai_core.packs.tariff_ca.duty.programs import CAPreferencePrograms
 
 
 class CADutyCalculator:
     def __init__(self, root: Path | None = None) -> None:
         self._root = root or _default_rates_root()
         self._base_rates = _load_rates(self._root / "base_rates.json")
-        self._surtaxes = _load_rates(self._root / "surtaxes.json")
+        self._layers = CADutyLayers(self._root)
+        self._programs = CAPreferencePrograms(self._root)
 
     def calculate(
         self,
@@ -21,32 +26,60 @@ class CADutyCalculator:
         flow: DutyFlow,
         preference_program: str | None = None,
     ) -> DutyBreakdown:
+        effective_date = parse_effective_date(flow.effective_date, fallback=date.today())
+        effective_date_str = effective_date.isoformat()
         entry = self._base_rates.get(line_id)
         assumptions: list[str] = []
         if not entry:
             return DutyBreakdown(
                 base_rate_pct=0.0,
                 preferential_rate_pct=None,
-                additional_duties=[],
-                surtaxes=[],
+                applied_additional_duties=[],
+                applied_surtaxes=[],
+                applied_layer_ids=[],
+                program_result=None,
                 total_rate_pct=0.0,
                 assumptions=["Rate not found in CA base rate table."],
+                effective_date=effective_date_str,
             )
         base_rate = float(entry.get("mfn_rate_pct", entry.get("base_rate_pct", 0.0)))
+        preference_program = preference_program or flow.preference_program
         preferential_rate = None
+        program_result = None
         if preference_program:
-            preferential_rate = _resolve_preference_rate(entry, preference_program)
-            if preferential_rate is None:
-                assumptions.append("Preference program not applied.")
-        surtaxes = _build_surtaxes(self._surtaxes.get(line_id))
-        total = base_rate + sum(item.rate_pct for item in surtaxes)
+            program_result = self._programs.evaluate(
+                preference_program,
+                _build_program_context(flow, line_id),
+            )
+            if program_result and program_result.status == "eligible":
+                preferential_rate = self._programs.resolve_preferential_rate(
+                    program_result.program_id,
+                    line_id,
+                )
+                if preferential_rate is None:
+                    assumptions.append(
+                        "Preference program eligible but no preferential rate found."
+                    )
+            elif program_result:
+                assumptions.append(f"Preference not applied: {program_result.reason}")
+        applied_surtaxes = self._layers.evaluate(
+            flow.origin_country,
+            line_id,
+            effective_date_str,
+        )
+        base_for_total = preferential_rate if preferential_rate is not None else base_rate
+        total = base_for_total + sum(item.pct for item in applied_surtaxes)
+        applied_layer_ids = [item.layer_id for item in applied_surtaxes]
         return DutyBreakdown(
             base_rate_pct=base_rate,
             preferential_rate_pct=preferential_rate,
-            additional_duties=[],
-            surtaxes=surtaxes,
+            applied_additional_duties=[],
+            applied_surtaxes=applied_surtaxes,
+            applied_layer_ids=applied_layer_ids,
+            program_result=program_result,
             total_rate_pct=round(total, 4),
             assumptions=assumptions,
+            effective_date=effective_date_str,
         )
 
 
@@ -64,24 +97,11 @@ def _load_rates(path: Path) -> dict[str, Any]:
     return payload
 
 
-def _resolve_preference_rate(entry: dict[str, Any], preference_program: str) -> float | None:
-    rates = entry.get("treatment_rates") or entry.get("preference_rates") or {}
-    value = rates.get(preference_program)
-    if value is None:
-        return None
-    return float(value)
-
-
-def _build_surtaxes(payload: Any) -> list[AdditionalDuty]:
-    if not payload:
-        return []
-    surtaxes: list[AdditionalDuty] = []
-    for entry in payload:
-        surtaxes.append(
-            AdditionalDuty(
-                code=entry.get("code", "SUR"),
-                description=entry.get("description"),
-                rate_pct=float(entry.get("rate_pct", 0.0)),
-            )
-        )
-    return surtaxes
+def _build_program_context(flow: DutyFlow, line_id: str) -> dict[str, Any]:
+    return {
+        "origin_country": flow.origin_country,
+        "origin_method": flow.origin_method,
+        "line_id": line_id,
+        "bom": flow.bom,
+        "manufacturing": flow.manufacturing,
+    }
