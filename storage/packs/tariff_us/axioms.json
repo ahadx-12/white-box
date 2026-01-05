@@ -1,0 +1,50 @@
+[
+  {
+    "subject": "GRI_1",
+    "predicate": "precedes",
+    "obj": "GRI_2",
+    "is_true": true,
+    "confidence": 1.0,
+    "type": "norm"
+  },
+  {
+    "subject": "GRI_2",
+    "predicate": "precedes",
+    "obj": "GRI_3",
+    "is_true": true,
+    "confidence": 1.0,
+    "type": "norm"
+  },
+  {
+    "subject": "GRI_3",
+    "predicate": "precedes",
+    "obj": "GRI_4",
+    "is_true": true,
+    "confidence": 1.0,
+    "type": "norm"
+  },
+  {
+    "subject": "GRI_4",
+    "predicate": "precedes",
+    "obj": "GRI_5",
+    "is_true": true,
+    "confidence": 1.0,
+    "type": "norm"
+  },
+  {
+    "subject": "GRI_5",
+    "predicate": "precedes",
+    "obj": "GRI_6",
+    "is_true": true,
+    "confidence": 1.0,
+    "type": "norm"
+  },
+  {
+    "subject": "GRI_3b",
+    "predicate": "rule",
+    "obj": "Essential_Character_Wins_In_Mixtures",
+    "is_true": true,
+    "confidence": 1.0,
+    "type": "norm"
+  }
+]

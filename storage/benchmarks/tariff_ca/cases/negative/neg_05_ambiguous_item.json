@@ -1,0 +1,32 @@
+{
+  "id": "tariff_neg_05_ambiguous_item",
+  "pack_id": "tariff_ca",
+  "case_type": "negative",
+  "difficulty": "hard",
+  "input": {
+    "input": "{\"importing_country\": \"CA\", \"exporting_country\": \"CN\", \"origin_country\": \"CN\", \"preference_program\": null, \"product_dossier\": {\"product_summary\": \"Classify an item described only as 'miscellaneous apparel' with no materials provided.\"}}",
+    "options": {
+      "max_iters": 3
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6402.99"
+    ],
+    "allowed_hts": [],
+    "must_not_hts": [],
+    "expected_accept": false,
+    "expected_refusal_category": "insufficient_info",
+    "no_savings_expected": false,
+    "duty_delta_range": null,
+    "expected_duty_total_rate_pct": null,
+    "expected_duty_delta_direction": null
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "insufficient_info",
+      "negative"
+    ]
+  }
+}

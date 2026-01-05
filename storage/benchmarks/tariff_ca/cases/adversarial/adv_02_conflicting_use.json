@@ -1,0 +1,37 @@
+{
+  "id": "tariff_adv_02_conflicting_use",
+  "pack_id": "tariff_ca",
+  "case_type": "adversarial",
+  "difficulty": "hard",
+  "input": {
+    "input": "{\"importing_country\": \"CA\", \"exporting_country\": \"CN\", \"origin_country\": \"CN\", \"preference_program\": null, \"product_dossier\": {\"product_summary\": \"Classify footwear claimed to be both athletic and formal dress in the same description.\"}}",
+    "options": {
+      "max_iters": 4
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6402.99"
+    ],
+    "allowed_hts": [
+      "6404.11.90"
+    ],
+    "must_not_hts": [
+      "6403.99.0000"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null,
+    "expected_duty_total_rate_pct": 18.0,
+    "expected_duty_delta_direction": "decrease"
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "adversarial",
+      "conflicting_use",
+      "chapter_64"
+    ]
+  }
+}

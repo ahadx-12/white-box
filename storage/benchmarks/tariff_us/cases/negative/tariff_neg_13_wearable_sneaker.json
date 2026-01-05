@@ -1,0 +1,35 @@
+{
+  "id": "tariff_neg_13_wearable_sneaker",
+  "pack_id": "tariff_us",
+  "case_type": "negative",
+  "difficulty": "expert",
+  "input": {
+    "input": "{\"importing_country\": \"US\", \"exporting_country\": \"CN\", \"origin_country\": \"CN\", \"preference_program\": null, \"product_dossier\": {\"product_summary\": \"Wearable sneaker embedded microcontroller charging port.\"}}",
+    "options": {
+      "max_iters": 3,
+      "candidate_chapters": [
+        "64"
+      ]
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6404.11"
+    ],
+    "allowed_hts": [],
+    "must_not_hts": [],
+    "expected_accept": false,
+    "expected_refusal_category": "missing_evidence",
+    "no_savings_expected": false,
+    "duty_delta_range": null,
+    "expected_duty_total_rate_pct": 2.6,
+    "expected_duty_delta_direction": "flat"
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "missing_evidence",
+      "borderline_ch64_ch85"
+    ]
+  }
+}

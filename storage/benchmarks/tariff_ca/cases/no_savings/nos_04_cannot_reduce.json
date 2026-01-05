@@ -1,0 +1,41 @@
+{
+  "id": "tariff_nos_04_cannot_reduce",
+  "pack_id": "tariff_ca",
+  "case_type": "no_savings",
+  "difficulty": "medium",
+  "input": {
+    "input": "{\"importing_country\": \"CA\", \"exporting_country\": \"CN\", \"origin_country\": \"CN\", \"preference_program\": null, \"product_dossier\": {\"product_summary\": \"Provide tariff classification and confirm that duty reduction is not possible.\"}}",
+    "options": {
+      "max_iters": 4
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6404.11.90"
+    ],
+    "allowed_hts": [
+      "6402.99"
+    ],
+    "must_not_hts": [
+      "6402.30.0000"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": true,
+    "lever_found_expected": false,
+    "duty_delta_range": [
+      -0.01,
+      0.01
+    ],
+    "expected_duty_total_rate_pct": 30.0,
+    "expected_duty_delta_direction": "flat"
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "no_savings",
+      "cannot_reduce",
+      "chapter_64"
+    ]
+  }
+}

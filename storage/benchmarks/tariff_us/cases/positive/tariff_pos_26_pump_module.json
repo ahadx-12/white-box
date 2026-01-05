@@ -1,0 +1,34 @@
+{
+  "id": "tariff_pos_26_pump_module",
+  "pack_id": "tariff_us",
+  "case_type": "positive",
+  "difficulty": "medium",
+  "input": {
+    "input": "{\"importing_country\": \"US\", \"exporting_country\": \"CN\", \"origin_country\": \"CN\", \"preference_program\": null, \"product_dossier\": {\"product_summary\": \"Pump module for circulating coolant liquids.\"}}",
+    "options": {
+      "max_iters": 3,
+      "candidate_chapters": [
+        "84"
+      ]
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "8413.70"
+    ],
+    "allowed_hts": [],
+    "must_not_hts": [],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null,
+    "expected_duty_total_rate_pct": 2.5,
+    "expected_duty_delta_direction": "flat"
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "chapter_84"
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "id": "tariff_sp_03_footwear_metal_toe",
+  "pack_id": "tariff_ca",
+  "case_type": "savings_possible",
+  "difficulty": "medium",
+  "input": {
+    "input": "{\"importing_country\": \"CA\", \"exporting_country\": \"CN\", \"origin_country\": \"CN\", \"preference_program\": null, \"product_dossier\": {\"product_summary\": \"{\\\"product_dossier\\\": {\\\"product_id\\\": \\\"FW-003\\\", \\\"product_summary\\\": \\\"Work footwear with metal toe and rubber outsole.\\\", \\\"upper_materials\\\": [{\\\"material\\\": \\\"leather\\\", \\\"pct\\\": 60.0}, {\\\"material\\\": \\\"textile\\\", \\\"pct\\\": 40.0}], \\\"outsole_materials\\\": [{\\\"material\\\": \\\"rubber\\\", \\\"pct\\\": 80.0}, {\\\"material\\\": \\\"textile\\\", \\\"pct\\\": 20.0}], \\\"sold_as_set\\\": false, \\\"has_metal_toe\\\": true, \\\"safety_footwear\\\": false}}\"}}",
+    "options": {
+      "max_iters": 2
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "6402.99"
+    ],
+    "allowed_hts": [
+      "6404.11.90"
+    ],
+    "must_not_hts": [
+      "9999.99.9999"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null,
+    "lever_found_expected": true,
+    "lever_count_min": 1,
+    "lever_compliance_ok": true,
+    "expected_duty_total_rate_pct": 18.0,
+    "expected_duty_delta_direction": "decrease"
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "savings_possible",
+      "chapter_64",
+      "footwear"
+    ]
+  }
+}

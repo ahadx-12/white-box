@@ -1,0 +1,50 @@
+[
+  {
+    "source_id": "CA.GRI.1",
+    "source_type": "gri",
+    "title": "General Rule of Interpretation 1",
+    "effective_date": "2024-01-01",
+    "url": null,
+    "text": "The titles of sections, chapters and subchapters are provided for ease of reference only; for legal purposes, classification shall be determined according to the terms of the headings and any relative section or chapter notes."
+  },
+  {
+    "source_id": "CA.GRI.2",
+    "source_type": "gri",
+    "title": "General Rule of Interpretation 2",
+    "effective_date": "2024-01-01",
+    "url": null,
+    "text": "Any reference in a heading to an article shall be taken to include a reference to that article incomplete or unfinished, provided that, as presented, it has the essential character of the complete or finished article."
+  },
+  {
+    "source_id": "CA.GRI.3",
+    "source_type": "gri",
+    "title": "General Rule of Interpretation 3",
+    "effective_date": "2024-01-01",
+    "url": null,
+    "text": "When goods are, prima facie, classifiable under two or more headings, classification shall be effected as follows: mixtures, composite goods or goods put up in sets for retail sale shall be classified as if they consisted of the material or component which gives them their essential character."
+  },
+  {
+    "source_id": "CA.GRI.4",
+    "source_type": "gri",
+    "title": "General Rule of Interpretation 4",
+    "effective_date": "2024-01-01",
+    "url": null,
+    "text": "Goods which cannot be classified in accordance with the above rules shall be classified under the heading appropriate to the goods to which they are most akin."
+  },
+  {
+    "source_id": "CA.GRI.5",
+    "source_type": "gri",
+    "title": "General Rule of Interpretation 5",
+    "effective_date": "2024-01-01",
+    "url": null,
+    "text": "In addition to the foregoing provisions, the following rules shall apply: packing materials and packing containers presented with the goods are classified with the goods if of a kind normally used for packing such goods."
+  },
+  {
+    "source_id": "CA.GRI.6",
+    "source_type": "gri",
+    "title": "General Rule of Interpretation 6",
+    "effective_date": "2024-01-01",
+    "url": null,
+    "text": "For legal purposes, the classification of goods in the subheadings of a heading shall be determined according to the terms of those subheadings and any related subheading notes."
+  }
+]

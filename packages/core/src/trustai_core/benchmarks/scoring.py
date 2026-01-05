@@ -104,9 +104,44 @@ def _extract_duty_delta(dossier: dict[str, Any] | None) -> float | None:
         return None
     baseline = dossier.get("baseline") or {}
     optimized = dossier.get("optimized") or {}
-    if baseline.get("duty_rate_pct") is None or optimized.get("duty_rate_pct") is None:
+    baseline_rate = _extract_duty_rate(baseline)
+    optimized_rate = _extract_duty_rate(optimized)
+    if baseline_rate is None or optimized_rate is None:
         return None
-    return float(optimized.get("duty_rate_pct")) - float(baseline.get("duty_rate_pct"))
+    return float(optimized_rate) - float(baseline_rate)
+
+
+def _extract_duty_rate(summary: dict[str, Any]) -> float | None:
+    breakdown = summary.get("duty_breakdown") or {}
+    if breakdown.get("total_rate_pct") is not None:
+        return float(breakdown.get("total_rate_pct"))
+    if summary.get("duty_rate_pct") is not None:
+        return float(summary.get("duty_rate_pct"))
+    return None
+
+
+def _extract_total_rate(dossier: dict[str, Any] | None) -> float | None:
+    if not dossier:
+        return None
+    optimized = dossier.get("optimized") or {}
+    baseline = dossier.get("baseline") or {}
+    return _extract_duty_rate(optimized) or _extract_duty_rate(baseline)
+
+
+def _extract_duty_direction(dossier: dict[str, Any] | None) -> str | None:
+    if not dossier:
+        return None
+    baseline = dossier.get("baseline") or {}
+    optimized = dossier.get("optimized") or {}
+    baseline_rate = _extract_duty_rate(baseline)
+    optimized_rate = _extract_duty_rate(optimized)
+    if baseline_rate is None or optimized_rate is None:
+        return None
+    if optimized_rate < baseline_rate:
+        return "decrease"
+    if optimized_rate > baseline_rate:
+        return "increase"
+    return "flat"
 
 
 def _extract_sequence_ok(payload: dict[str, Any], dossier: dict[str, Any] | None) -> bool:
@@ -233,6 +268,8 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
     final_hts = _extract_final_hts(dossier)
     refusal_category = _extract_refusal_category(rejected_because)
     duty_delta = _extract_duty_delta(dossier)
+    duty_total_rate = _extract_total_rate(dossier)
+    duty_direction = _extract_duty_direction(dossier)
     sequence_ok = _extract_sequence_ok(payload, dossier)
     critical_gates_ok = _critical_gates_passed(rejected_because)
     no_savings_ok = _check_no_savings(dossier)
@@ -248,6 +285,7 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
     match_level: str | None = None
     score = 0.0
     process_bonus = 0.0
+    duty_total_rate_match = None
 
     if case.expected.expected_accept:
         if not accepted:
@@ -292,6 +330,21 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
                 if not (low <= duty_delta <= high):
                     penalties.append("duty_delta_out_of_range")
                     score -= DUTY_DELTA_PENALTY
+            if case.expected.expected_duty_total_rate_pct is not None:
+                expected_rate = case.expected.expected_duty_total_rate_pct
+                duty_total_rate_match = duty_total_rate is not None and math.isclose(
+                    duty_total_rate,
+                    expected_rate,
+                    rel_tol=0.0,
+                    abs_tol=0.0001,
+                )
+                if not duty_total_rate_match:
+                    penalties.append("duty_total_rate_mismatch")
+                    score = 0.0
+            if case.expected.expected_duty_delta_direction is not None:
+                if duty_direction != case.expected.expected_duty_delta_direction:
+                    penalties.append("duty_delta_direction_mismatch")
+                    score = 0.0
             if case.expected.lever_found_expected is not None:
                 if case.expected.lever_found_expected and lever_count < 1:
                     penalties.append("lever_missing")
@@ -344,6 +397,8 @@ def score_case(case: BenchmarkCase, result: Any) -> CaseScore:
         refusal_category_expected=case.expected.expected_refusal_category,
         refusal_category_actual=refusal_category,
         duty_delta=None if duty_delta is None else round(float(duty_delta), 4),
+        duty_total_rate_match=duty_total_rate_match,
+        duty_delta_direction=duty_direction,
         no_savings_ok=no_savings_ok if case.expected.no_savings_expected else None,
         process_bonus=round(process_bonus, 4),
         penalties=penalties,

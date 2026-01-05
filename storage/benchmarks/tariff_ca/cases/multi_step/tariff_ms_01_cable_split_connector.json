@@ -1,0 +1,40 @@
+{
+  "id": "tariff_ms_01_cable_split_connector",
+  "pack_id": "tariff_ca",
+  "case_type": "savings_possible",
+  "difficulty": "medium",
+  "input": {
+    "input": "{\"importing_country\": \"CA\", \"exporting_country\": \"CN\", \"origin_country\": \"CN\", \"preference_program\": null, \"product_dossier\": {\"product_summary\": \"{\\\"product_dossier\\\": {\\\"product_id\\\": \\\"EL-MS-001\\\", \\\"product_summary\\\": \\\"USB cable and power adapter sold as a set.\\\", \\\"sold_as_set\\\": true, \\\"components\\\": [{\\\"name\\\": \\\"USB cable\\\", \\\"component_type\\\": \\\"cable\\\", \\\"material\\\": \\\"copper\\\", \\\"contains_electronics\\\": true}, {\\\"name\\\": \\\"Power adapter\\\", \\\"component_type\\\": \\\"adapter\\\", \\\"material\\\": \\\"plastic\\\", \\\"contains_electronics\\\": true}], \\\"connector_material\\\": \\\"metal\\\", \\\"adapter_housing_material\\\": \\\"plastic\\\", \\\"housing_material\\\": null, \\\"contains_electronics\\\": true}}\"}}",
+    "options": {
+      "max_iters": 2
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "8544.11"
+    ],
+    "allowed_hts": [],
+    "must_not_hts": [
+      "9999.99.9999"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null,
+    "lever_found_expected": true,
+    "lever_count_min": 1,
+    "lever_compliance_ok": true,
+    "expected_best_is_multi_step": true,
+    "min_lever_steps": 2,
+    "expected_duty_total_rate_pct": 0.0,
+    "expected_duty_delta_direction": "flat"
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "multi_step",
+      "chapter_85",
+      "cables"
+    ]
+  }
+}

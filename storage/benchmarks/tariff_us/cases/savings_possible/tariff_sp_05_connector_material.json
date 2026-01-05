@@ -1,0 +1,38 @@
+{
+  "id": "tariff_sp_05_connector_material",
+  "pack_id": "tariff_us",
+  "case_type": "savings_possible",
+  "difficulty": "medium",
+  "input": {
+    "input": "{\"importing_country\": \"US\", \"exporting_country\": \"CN\", \"origin_country\": \"CN\", \"preference_program\": null, \"product_dossier\": {\"product_summary\": \"{\\\"product_dossier\\\": {\\\"product_id\\\": \\\"EL-002\\\", \\\"product_summary\\\": \\\"Insulated cable with metal connectors.\\\", \\\"sold_as_set\\\": false, \\\"components\\\": [{\\\"name\\\": \\\"Cable\\\", \\\"component_type\\\": \\\"cable\\\", \\\"material\\\": \\\"copper\\\", \\\"contains_electronics\\\": true}], \\\"connector_material\\\": \\\"metal\\\", \\\"adapter_housing_material\\\": \\\"metal\\\", \\\"contains_electronics\\\": true}}\"}}",
+    "options": {
+      "max_iters": 2
+    }
+  },
+  "expected": {
+    "preferred_hts": [
+      "8544.11"
+    ],
+    "allowed_hts": [],
+    "must_not_hts": [
+      "9999.99.9999"
+    ],
+    "expected_accept": true,
+    "expected_refusal_category": null,
+    "no_savings_expected": false,
+    "duty_delta_range": null,
+    "lever_found_expected": true,
+    "lever_count_min": 1,
+    "lever_compliance_ok": true,
+    "expected_duty_total_rate_pct": 2.6,
+    "expected_duty_delta_direction": "flat"
+  },
+  "notes": {
+    "source": "synthetic",
+    "tags": [
+      "savings_possible",
+      "chapter_85",
+      "cables"
+    ]
+  }
+}
